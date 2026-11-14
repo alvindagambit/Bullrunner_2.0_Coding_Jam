@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Leaflet needs its container to have a real height (see team plan, "Map renders blank"). */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Hide the browser's focus box when clicking a route line. */
+.leaflet-interactive:focus {
+  outline: none;
+}
