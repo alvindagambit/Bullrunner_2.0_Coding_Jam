@@ -11,8 +11,8 @@ function BackgroundClick({ onClick }) {
 
 function formatLoad(load) {
   if (!Number.isFinite(load)) return null
-  // CONTRACT assumption: load is 0-1 (share of seats taken).
-  return `${Math.round(load * 100)}% full`
+  // Backend contract: load is a percentage from 0 to 100.
+  return `${Math.round(load)}% full`
 }
 
 /**
