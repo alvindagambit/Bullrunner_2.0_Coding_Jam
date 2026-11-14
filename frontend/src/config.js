@@ -15,3 +15,6 @@ export const DEFAULT_ZOOM = 15
 
 /** How often to refresh bus positions. */
 export const BUS_POLL_MS = 5000
+
+/** How often to refresh service alerts. */
+export const ALERTS_POLL_MS = 60000

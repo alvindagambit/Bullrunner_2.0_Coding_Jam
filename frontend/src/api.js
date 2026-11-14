@@ -14,3 +14,11 @@ export async function fetchBuses() {
     .map((b) => ({ ...b, lat: Number(b.lat), lng: Number(b.lng), load: Number(b.load) }))
     .filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng))
 }
+
+export async function fetchAlerts() {
+  const res = await fetch(`${API_URL}/alerts`)
+  if (res.status === 404) return []
+  if (!res.ok) throw new Error(`GET /alerts failed: HTTP ${res.status}`)
+  const alerts = await res.json()
+  return Array.isArray(alerts) ? alerts : []
+}
