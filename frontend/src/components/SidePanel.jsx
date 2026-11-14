@@ -34,10 +34,10 @@ export default function SidePanel({
   const liveBusesCount = buses.length
   const activeRoutesCount = new Set(buses.map((b) => b.route).filter(Boolean)).size
 
-  // Support both 0-1 (mock/CONTRACT) and 0-100 (backend) load values.
+  // Backend contract: load is 0–100 percent, or null when unavailable.
   const validLoads = buses
-    .map((b) => (b.load > 1 ? b.load : b.load * 100))
-    .filter((l) => Number.isFinite(l) && l >= 0)
+    .map((b) => b.load)
+    .filter((load) => typeof load === 'number' && Number.isFinite(load) && load >= 0)
 
   const avgLoad =
     validLoads.length > 0
