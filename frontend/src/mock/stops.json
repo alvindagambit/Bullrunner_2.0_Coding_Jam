@@ -1,0 +1,566 @@
+[
+ {
+  "id": "70748",
+  "name": "Marshall Student Center",
+  "lat": 28.06429,
+  "lng": -82.41381
+ },
+ {
+  "id": "70750",
+  "name": "The Village Palm Dr entrance",
+  "lat": 28.06652,
+  "lng": -82.41317
+ },
+ {
+  "id": "70786",
+  "name": "The Hub",
+  "lat": 28.06793,
+  "lng": -82.41178
+ },
+ {
+  "id": "70787",
+  "name": "Parking Lot 56",
+  "lat": 28.06792,
+  "lng": -82.4104
+ },
+ {
+  "id": "70776",
+  "name": "N 46th St at Uptown Landing",
+  "lat": 28.0723,
+  "lng": -82.40991
+ },
+ {
+  "id": "70777",
+  "name": "N 46th St at Shadow Moss Ln",
+  "lat": 28.07502,
+  "lng": -82.40995
+ },
+ {
+  "id": "70778",
+  "name": "N 46th St at USF Golf Center",
+  "lat": 28.07704,
+  "lng": -82.40999
+ },
+ {
+  "id": "70779",
+  "name": "Skipper Rd at 43rd St",
+  "lat": 28.08039,
+  "lng": -82.41243
+ },
+ {
+  "id": "70780",
+  "name": "N 42nd St at Hellenic Dr",
+  "lat": 28.07827,
+  "lng": -82.41415
+ },
+ {
+  "id": "70781",
+  "name": "N 42nd St at Cambridge Woods Dr",
+  "lat": 28.07615,
+  "lng": -82.41415
+ },
+ {
+  "id": "70783",
+  "name": "N 42nd St at Rocky Circle",
+  "lat": 28.07214,
+  "lng": -82.41404
+ },
+ {
+  "id": "70749",
+  "name": "Palm Dr at Laurel Dr",
+  "lat": 28.068,
+  "lng": -82.41327
+ },
+ {
+  "id": "70752",
+  "name": "North Campus Mail Center",
+  "lat": 28.06566,
+  "lng": -82.41127
+ },
+ {
+  "id": "70753",
+  "name": "Holly Dr at Maple Suites",
+  "lat": 28.06567,
+  "lng": -82.40948
+ },
+ {
+  "id": "70695",
+  "name": "Genshaft Dr at Maple Suites",
+  "lat": 28.06502,
+  "lng": -82.40816
+ },
+ {
+  "id": "70699",
+  "name": "Sessums Mall",
+  "lat": 28.06076,
+  "lng": -82.40882
+ },
+ {
+  "id": "70701",
+  "name": "Muma College of Business",
+  "lat": 28.05865,
+  "lng": -82.4088
+ },
+ {
+  "id": "70703",
+  "name": "Muma College of Business South Entrance",
+  "lat": 28.0573,
+  "lng": -82.40964
+ },
+ {
+  "id": "70692",
+  "name": "Library",
+  "lat": 28.05916,
+  "lng": -82.41302
+ },
+ {
+  "id": "70691",
+  "name": "Math & Engineering",
+  "lat": 28.05917,
+  "lng": -82.41341
+ },
+ {
+  "id": "70711",
+  "name": "Center for Urban Transportation Research",
+  "lat": 28.05807,
+  "lng": -82.41613
+ },
+ {
+  "id": "70715",
+  "name": "Science Center",
+  "lat": 28.06007,
+  "lng": -82.41761
+ },
+ {
+  "id": "70716",
+  "name": "Simmons Park",
+  "lat": 28.06127,
+  "lng": -82.41951
+ },
+ {
+  "id": "70718",
+  "name": "Psychology to MSC",
+  "lat": 28.06402,
+  "lng": -82.41921
+ },
+ {
+  "id": "70729",
+  "name": "School of Music",
+  "lat": 28.06546,
+  "lng": -82.41792
+ },
+ {
+  "id": "70727",
+  "name": "Fine Arts Studio",
+  "lat": 28.06486,
+  "lng": -82.41633
+ },
+ {
+  "id": "70725",
+  "name": "Theatre Centre",
+  "lat": 28.06486,
+  "lng": -82.41469
+ },
+ {
+  "id": "195848",
+  "name": "Marshall Student Center II",
+  "lat": 28.06429,
+  "lng": -82.41383
+ },
+ {
+  "id": "152014",
+  "name": "The Retreat",
+  "lat": 28.05161,
+  "lng": -82.40994
+ },
+ {
+  "id": "70765",
+  "name": "Busch Gardens Employee Entrance",
+  "lat": 28.04349,
+  "lng": -82.41983
+ },
+ {
+  "id": "70764",
+  "name": "McKinley Dr at Bougainvillea Ave",
+  "lat": 28.04422,
+  "lng": -82.41614
+ },
+ {
+  "id": "70762",
+  "name": "McKinley Dr to Library",
+  "lat": 28.05052,
+  "lng": -82.41614
+ },
+ {
+  "id": "70788",
+  "name": "Publix",
+  "lat": 28.06804,
+  "lng": -82.41177
+ },
+ {
+  "id": "70740",
+  "name": "Park and Ride Lot 43 East",
+  "lat": 28.06772,
+  "lng": -82.41465
+ },
+ {
+  "id": "70739",
+  "name": "Park and Ride Lot 43 West",
+  "lat": 28.06789,
+  "lng": -82.41652
+ },
+ {
+  "id": "70738",
+  "name": "Laurel Dr Parking Garage",
+  "lat": 28.0664,
+  "lng": -82.41769
+ },
+ {
+  "id": "70731",
+  "name": "USF Health Faculty Office Building",
+  "lat": 28.06606,
+  "lng": -82.41921
+ },
+ {
+  "id": "70733",
+  "name": "Holly Dr at Magnolia Dr",
+  "lat": 28.06607,
+  "lng": -82.42083
+ },
+ {
+  "id": "161780",
+  "name": "USF Health at MDN",
+  "lat": 28.06533,
+  "lng": -82.42443
+ },
+ {
+  "id": "70741",
+  "name": "Westside Conference Center",
+  "lat": 28.06684,
+  "lng": -82.42394
+ },
+ {
+  "id": "70742",
+  "name": "College of Public Health",
+  "lat": 28.06723,
+  "lng": -82.42498
+ },
+ {
+  "id": "70743",
+  "name": "Northwest Education Complex",
+  "lat": 28.06799,
+  "lng": -82.4254
+ },
+ {
+  "id": "70744",
+  "name": "Chiles Center",
+  "lat": 28.06879,
+  "lng": -82.4234
+ },
+ {
+  "id": "70745",
+  "name": "USF Health Therapy Building",
+  "lat": 28.06843,
+  "lng": -82.41828
+ },
+ {
+  "id": "70746",
+  "name": "Child Development Center",
+  "lat": 28.06752,
+  "lng": -82.41872
+ },
+ {
+  "id": "70747",
+  "name": "Morsani Advanced Healthcare",
+  "lat": 28.067,
+  "lng": -82.41901
+ },
+ {
+  "id": "70726",
+  "name": "Post Office",
+  "lat": 28.06494,
+  "lng": -82.4142
+ },
+ {
+  "id": "70728",
+  "name": "Parking and Transportation Services",
+  "lat": 28.06494,
+  "lng": -82.41656
+ },
+ {
+  "id": "70720",
+  "name": "Moffitt Research Offices",
+  "lat": 28.06518,
+  "lng": -82.41902
+ },
+ {
+  "id": "70719",
+  "name": "Psychology to LIB",
+  "lat": 28.06417,
+  "lng": -82.4192
+ },
+ {
+  "id": "70721",
+  "name": "Magnolia Dr at Parking Lot 19",
+  "lat": 28.06239,
+  "lng": -82.41954
+ },
+ {
+  "id": "70717",
+  "name": "Juniper-Poplar",
+  "lat": 28.05996,
+  "lng": -82.41777
+ },
+ {
+  "id": "70714",
+  "name": "University Technology Center",
+  "lat": 28.05803,
+  "lng": -82.41725
+ },
+ {
+  "id": "70712",
+  "name": "Research Park",
+  "lat": 28.05778,
+  "lng": -82.4158
+ },
+ {
+  "id": "70757",
+  "name": "Parking Lot 35",
+  "lat": 28.06564,
+  "lng": -82.4074
+ },
+ {
+  "id": "70759",
+  "name": "Holly Dr at 50th St",
+  "lat": 28.06629,
+  "lng": -82.40234
+ },
+ {
+  "id": "70784",
+  "name": "N 50th St at Bordeaux Village Pl",
+  "lat": 28.06347,
+  "lng": -82.40196
+ },
+ {
+  "id": "70785",
+  "name": "N 50th St at Elm Dr",
+  "lat": 28.06048,
+  "lng": -82.40192
+ },
+ {
+  "id": "70707",
+  "name": "Lee Roy Selmon Athletics Center",
+  "lat": 28.05979,
+  "lng": -82.40419
+ },
+ {
+  "id": "70709",
+  "name": "Yuengling Center east entrance",
+  "lat": 28.05762,
+  "lng": -82.40549
+ },
+ {
+  "id": "70693",
+  "name": "Alumni Center",
+  "lat": 28.0572,
+  "lng": -82.41101
+ },
+ {
+  "id": "70694",
+  "name": "Patel Center",
+  "lat": 28.05673,
+  "lng": -82.40831
+ },
+ {
+  "id": "70710",
+  "name": "Softball Stadium",
+  "lat": 28.05767,
+  "lng": -82.40536
+ },
+ {
+  "id": "70708",
+  "name": "Baseball Field",
+  "lat": 28.05978,
+  "lng": -82.40477
+ },
+ {
+  "id": "70790",
+  "name": "Sycamore Dr at Elm Dr",
+  "lat": 28.06015,
+  "lng": -82.40264
+ },
+ {
+  "id": "70705",
+  "name": "Sycamore Dr - Stadium",
+  "lat": 28.06318,
+  "lng": -82.40264
+ },
+ {
+  "id": "70704",
+  "name": "Sycamore Dr at Holly Dr",
+  "lat": 28.06565,
+  "lng": -82.40269
+ },
+ {
+  "id": "70758",
+  "name": "Greek Park",
+  "lat": 28.06576,
+  "lng": -82.40739
+ },
+ {
+  "id": "70754",
+  "name": "Holly Drive Apartments",
+  "lat": 28.06576,
+  "lng": -82.40993
+ },
+ {
+  "id": "70751",
+  "name": "The Village Holly Dr entrance",
+  "lat": 28.06579,
+  "lng": -82.41202
+ },
+ {
+  "id": "70702",
+  "name": "Yuengling Center west entrance",
+  "lat": 28.05881,
+  "lng": -82.40865
+ },
+ {
+  "id": "70698",
+  "name": "CW Bill Young Hall",
+  "lat": 28.06115,
+  "lng": -82.40865
+ },
+ {
+  "id": "70696",
+  "name": "Genshaft Dr at Parking Lot 35",
+  "lat": 28.06478,
+  "lng": -82.40805
+ },
+ {
+  "id": "70737",
+  "name": "Children's Health Center",
+  "lat": 28.06586,
+  "lng": -82.42476
+ },
+ {
+  "id": "70773",
+  "name": "UATC to Library",
+  "lat": 28.06556,
+  "lng": -82.42987
+ },
+ {
+  "id": "70775",
+  "name": "E 131st Ave to Library",
+  "lat": 28.06556,
+  "lng": -82.43239
+ },
+ {
+  "id": "70771",
+  "name": "N 22nd St at Vollmer Way",
+  "lat": 28.06288,
+  "lng": -82.43464
+ },
+ {
+  "id": "70769",
+  "name": "N 22nd St at University Village",
+  "lat": 28.0613,
+  "lng": -82.43461
+ },
+ {
+  "id": "120740",
+  "name": "HUB Tampa to Library",
+  "lat": 28.05839,
+  "lng": -82.43154
+ },
+ {
+  "id": "70767",
+  "name": "The Standard to Library",
+  "lat": 28.05695,
+  "lng": -82.42814
+ },
+ {
+  "id": "70724",
+  "name": "Botanical Gardens to Library",
+  "lat": 28.05745,
+  "lng": -82.42293
+ },
+ {
+  "id": "70713",
+  "name": "Magnolia Apartments",
+  "lat": 28.05814,
+  "lng": -82.41806
+ },
+ {
+  "id": "70722",
+  "name": "Magnolia Fields Complex",
+  "lat": 28.05813,
+  "lng": -82.42161
+ },
+ {
+  "id": "152013",
+  "name": "HPC (On Demand)",
+  "lat": 28.06132,
+  "lng": -82.42244
+ },
+ {
+  "id": "70723",
+  "name": "Botanical Gardens to MSC",
+  "lat": 28.05777,
+  "lng": -82.42303
+ },
+ {
+  "id": "70766",
+  "name": "The Standard to MSC",
+  "lat": 28.05702,
+  "lng": -82.42826
+ },
+ {
+  "id": "70768",
+  "name": "N 22nd St at University Village to MSC",
+  "lat": 28.06157,
+  "lng": -82.43449
+ },
+ {
+  "id": "70770",
+  "name": "N 22nd St at University Lake Dr",
+  "lat": 28.06322,
+  "lng": -82.43455
+ },
+ {
+  "id": "70774",
+  "name": "E 131st Ave to MSC",
+  "lat": 28.06551,
+  "lng": -82.4325
+ },
+ {
+  "id": "70772",
+  "name": "UATC to MSC",
+  "lat": 28.06549,
+  "lng": -82.42918
+ },
+ {
+  "id": "71013",
+  "name": "Holly Dr at MDA",
+  "lat": 28.0657,
+  "lng": -82.42478
+ },
+ {
+  "id": "70734",
+  "name": "Holly Dr at Health Dr",
+  "lat": 28.06599,
+  "lng": -82.42315
+ },
+ {
+  "id": "70732",
+  "name": "Stabile Research Building",
+  "lat": 28.06597,
+  "lng": -82.42082
+ },
+ {
+  "id": "70730",
+  "name": "Moffitt Research Center",
+  "lat": 28.066,
+  "lng": -82.41912
+ }
+]
