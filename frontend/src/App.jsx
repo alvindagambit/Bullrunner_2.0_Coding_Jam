@@ -1,20 +1,26 @@
 import { useState } from 'react'
 import BusMap from './components/Map'
+import SidePanel from './components/SidePanel'
+import { useAlerts } from './hooks/useAlerts'
 import { useBuses } from './hooks/useBuses'
 import { useStaticData } from './hooks/useStaticData'
 
 export default function App() {
   const { routes, stops, fromMock: staticFromMock } = useStaticData()
-  const { buses, error, isMock } = useBuses()
+  const { buses, error, isMock, lastUpdated } = useBuses()
+  const { alerts } = useAlerts()
   const [selectedRoute, setSelectedRoute] = useState(null)
 
   return (
-    <div className="flex h-screen w-screen">
-      {/*
-        Ana's <SidePanel /> goes here. Everything it needs already lives in this component:
-          buses, routes, lastUpdated (from useBuses), selectedRoute, onSelectRoute={setSelectedRoute}
-        Clicking a route in the panel -> setSelectedRoute(name) -> the map highlights that route.
-      */}
+    <div className="flex h-screen w-screen overflow-hidden">
+      <SidePanel
+        buses={buses}
+        routes={routes}
+        selectedRoute={selectedRoute}
+        onSelectRoute={setSelectedRoute}
+        lastUpdated={lastUpdated}
+        alerts={alerts}
+      />
 
       <main className="relative flex-1">
         <BusMap
