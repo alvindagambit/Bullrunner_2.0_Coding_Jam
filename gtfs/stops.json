@@ -1,0 +1,668 @@
+[
+  {
+    "stop_id": "70691",
+    "name": "00101 - Math & Engineering",
+    "lat": 28.05916919,
+    "lng": -82.413411001
+  },
+  {
+    "stop_id": "70692",
+    "name": "00102 - Library",
+    "lat": 28.059163883,
+    "lng": -82.413023178
+  },
+  {
+    "stop_id": "70693",
+    "name": "00108 - Alumni Center",
+    "lat": 28.057199,
+    "lng": -82.411012
+  },
+  {
+    "stop_id": "70694",
+    "name": "00110 - Patel Center",
+    "lat": 28.056726,
+    "lng": -82.40831
+  },
+  {
+    "stop_id": "70695",
+    "name": "00115 - Genshaft Dr at Maple Suites",
+    "lat": 28.065016,
+    "lng": -82.408163
+  },
+  {
+    "stop_id": "70696",
+    "name": "00116 - Genshaft Dr at Parking Lot 35",
+    "lat": 28.064776,
+    "lng": -82.408054
+  },
+  {
+    "stop_id": "70697",
+    "name": "00119 - Social Science",
+    "lat": 28.061319,
+    "lng": -82.408776
+  },
+  {
+    "stop_id": "70698",
+    "name": "00120 - CW Bill Young Hall",
+    "lat": 28.061151,
+    "lng": -82.408648
+  },
+  {
+    "stop_id": "70699",
+    "name": "00121 - Sessums Mall",
+    "lat": 28.060756017,
+    "lng": -82.408817775
+  },
+  {
+    "stop_id": "70701",
+    "name": "00125 - Muma College of Business",
+    "lat": 28.058653,
+    "lng": -82.408796
+  },
+  {
+    "stop_id": "70702",
+    "name": "00126 - Yuengling Center west entrance",
+    "lat": 28.058807,
+    "lng": -82.408647
+  },
+  {
+    "stop_id": "70703",
+    "name": "00129 - Muma College of Business South Entrance",
+    "lat": 28.0573,
+    "lng": -82.409642
+  },
+  {
+    "stop_id": "70704",
+    "name": "00150 - Sycamore Dr at Holly Dr",
+    "lat": 28.065648,
+    "lng": -82.402693
+  },
+  {
+    "stop_id": "70705",
+    "name": "00154 - Sycamore Dr - Stadium",
+    "lat": 28.063182171,
+    "lng": -82.402637132
+  },
+  {
+    "stop_id": "70790",
+    "name": "00158 - Sycamore Dr at Elm Dr",
+    "lat": 28.060151909,
+    "lng": -82.402643044
+  },
+  {
+    "stop_id": "70707",
+    "name": "00161 - Lee Roy Selmon Athletics Center",
+    "lat": 28.059792734,
+    "lng": -82.404190995
+  },
+  {
+    "stop_id": "70708",
+    "name": "00162 - Baseball Field",
+    "lat": 28.059784,
+    "lng": -82.404773
+  },
+  {
+    "stop_id": "70709",
+    "name": "00165 - Yuengling Center east entrance",
+    "lat": 28.057622008,
+    "lng": -82.405488445
+  },
+  {
+    "stop_id": "70710",
+    "name": "00166 - Softball Stadium",
+    "lat": 28.057674,
+    "lng": -82.405356
+  },
+  {
+    "stop_id": "70711",
+    "name": "00203 - Center for Urban Transportation Research",
+    "lat": 28.058073,
+    "lng": -82.416129
+  },
+  {
+    "stop_id": "70712",
+    "name": "00204 - Research Park",
+    "lat": 28.057783,
+    "lng": -82.415798
+  },
+  {
+    "stop_id": "70713",
+    "name": "00205 - Magnolia Apartments",
+    "lat": 28.058139,
+    "lng": -82.41806
+  },
+  {
+    "stop_id": "70714",
+    "name": "00206 - University Technology Center",
+    "lat": 28.058025734,
+    "lng": -82.417246689
+  },
+  {
+    "stop_id": "70715",
+    "name": "00209 - Science Center",
+    "lat": 28.060066,
+    "lng": -82.41761
+  },
+  {
+    "stop_id": "70716",
+    "name": "00213 - Simmons Park",
+    "lat": 28.061265,
+    "lng": -82.419514
+  },
+  {
+    "stop_id": "70717",
+    "name": "00214 - Juniper-Poplar",
+    "lat": 28.059957,
+    "lng": -82.417771
+  },
+  {
+    "stop_id": "70718",
+    "name": "00221 - Psychology to MSC",
+    "lat": 28.064023,
+    "lng": -82.419205
+  },
+  {
+    "stop_id": "70719",
+    "name": "00222 - Psychology to LIB",
+    "lat": 28.064168,
+    "lng": -82.419203
+  },
+  {
+    "stop_id": "70720",
+    "name": "00226 - Moffitt Research Offices",
+    "lat": 28.0651817,
+    "lng": -82.41901768
+  },
+  {
+    "stop_id": "70721",
+    "name": "00230 - Magnolia Dr at Parking Lot 19",
+    "lat": 28.062388078,
+    "lng": -82.419542187
+  },
+  {
+    "stop_id": "70722",
+    "name": "00239 - Magnolia Fields Complex",
+    "lat": 28.058125,
+    "lng": -82.421609
+  },
+  {
+    "stop_id": "70723",
+    "name": "00240 - Botanical Gardens to MSC",
+    "lat": 28.057765,
+    "lng": -82.423029
+  },
+  {
+    "stop_id": "70724",
+    "name": "00241 - Botanical Gardens to Library",
+    "lat": 28.057445386,
+    "lng": -82.422928636
+  },
+  {
+    "stop_id": "152013",
+    "name": "00250 - HPC (On Demand)",
+    "lat": 28.061318,
+    "lng": -82.42244
+  },
+  {
+    "stop_id": "70725",
+    "name": "00301 - Theatre Centre",
+    "lat": 28.064859,
+    "lng": -82.414694
+  },
+  {
+    "stop_id": "70726",
+    "name": "00302 - Post Office",
+    "lat": 28.064944,
+    "lng": -82.414201
+  },
+  {
+    "stop_id": "70727",
+    "name": "00303 - Fine Arts Studio",
+    "lat": 28.064858367,
+    "lng": -82.416334271
+  },
+  {
+    "stop_id": "70728",
+    "name": "00304 - Parking and Transportation Services",
+    "lat": 28.064939,
+    "lng": -82.416558
+  },
+  {
+    "stop_id": "70729",
+    "name": "00305 - School of Music",
+    "lat": 28.06546,
+    "lng": -82.417921
+  },
+  {
+    "stop_id": "70730",
+    "name": "00311 - Moffitt Research Center",
+    "lat": 28.065997,
+    "lng": -82.41912
+  },
+  {
+    "stop_id": "70731",
+    "name": "00312 - USF Health Faculty Office Building",
+    "lat": 28.066063,
+    "lng": -82.419212
+  },
+  {
+    "stop_id": "70732",
+    "name": "00313 - Stabile Research Building",
+    "lat": 28.065974,
+    "lng": -82.420823
+  },
+  {
+    "stop_id": "70733",
+    "name": "00314 - Holly Dr at Magnolia Dr",
+    "lat": 28.066069,
+    "lng": -82.420827
+  },
+  {
+    "stop_id": "70734",
+    "name": "00315 - Holly Dr at Health Dr",
+    "lat": 28.065985,
+    "lng": -82.423148
+  },
+  {
+    "stop_id": "70735",
+    "name": "00317 - USF Health at MDN",
+    "lat": 28.065136,
+    "lng": -82.423631
+  },
+  {
+    "stop_id": "161780",
+    "name": "00317 - USF Health at MDN",
+    "lat": 28.065326965,
+    "lng": -82.424432886
+  },
+  {
+    "stop_id": "70736",
+    "name": "00318 - College of Nursing",
+    "lat": 28.06439,
+    "lng": -82.423773
+  },
+  {
+    "stop_id": "70737",
+    "name": "00319 - Children's Health Center",
+    "lat": 28.065859,
+    "lng": -82.424763
+  },
+  {
+    "stop_id": "71013",
+    "name": "00320 - Holly Dr at MDA",
+    "lat": 28.065699,
+    "lng": -82.424782
+  },
+  {
+    "stop_id": "70738",
+    "name": "00326 - Laurel Dr Parking Garage",
+    "lat": 28.066402,
+    "lng": -82.417694
+  },
+  {
+    "stop_id": "70739",
+    "name": "00328 - Park and Ride Lot 43 West",
+    "lat": 28.067885,
+    "lng": -82.416518
+  },
+  {
+    "stop_id": "70740",
+    "name": "00330 - Park and Ride Lot 43 East",
+    "lat": 28.067715,
+    "lng": -82.414654
+  },
+  {
+    "stop_id": "70741",
+    "name": "00340 - Westside Conference Center",
+    "lat": 28.066842,
+    "lng": -82.423937
+  },
+  {
+    "stop_id": "70742",
+    "name": "00342 - College of Public Health",
+    "lat": 28.067233,
+    "lng": -82.424983
+  },
+  {
+    "stop_id": "70743",
+    "name": "00344 - Northwest Education Complex",
+    "lat": 28.067988,
+    "lng": -82.425404
+  },
+  {
+    "stop_id": "70744",
+    "name": "00346 - Chiles Center",
+    "lat": 28.068788,
+    "lng": -82.423398
+  },
+  {
+    "stop_id": "70745",
+    "name": "00348 - USF Health Therapy Building",
+    "lat": 28.068425,
+    "lng": -82.41828
+  },
+  {
+    "stop_id": "70746",
+    "name": "00350 - Child Development Center",
+    "lat": 28.067518,
+    "lng": -82.418725
+  },
+  {
+    "stop_id": "70747",
+    "name": "00352 - Morsani Advanced Healthcare",
+    "lat": 28.066996,
+    "lng": -82.41901
+  },
+  {
+    "stop_id": "70748",
+    "name": "00401 - Marshall Student Center",
+    "lat": 28.064292,
+    "lng": -82.413807
+  },
+  {
+    "stop_id": "195848",
+    "name": "00401 - Marshall Student Center II",
+    "lat": 28.064292592,
+    "lng": -82.413825775
+  },
+  {
+    "stop_id": "70749",
+    "name": "00411 - Palm Dr at Laurel Dr",
+    "lat": 28.067995,
+    "lng": -82.413269
+  },
+  {
+    "stop_id": "70750",
+    "name": "00414 - The Village Palm Dr entrance",
+    "lat": 28.066517,
+    "lng": -82.413167
+  },
+  {
+    "stop_id": "70751",
+    "name": "00418 - The Village Holly Dr entrance",
+    "lat": 28.065789917,
+    "lng": -82.412017064
+  },
+  {
+    "stop_id": "70752",
+    "name": "00421 - North Campus Mail Center",
+    "lat": 28.065656,
+    "lng": -82.411269
+  },
+  {
+    "stop_id": "70753",
+    "name": "00425 - Holly Dr at Maple Suites",
+    "lat": 28.065666,
+    "lng": -82.409483
+  },
+  {
+    "stop_id": "70754",
+    "name": "00426 - Holly Drive Apartments",
+    "lat": 28.065761,
+    "lng": -82.409933
+  },
+  {
+    "stop_id": "70755",
+    "name": "00430 - Cypress Apartments",
+    "lat": 28.066647,
+    "lng": -82.40803
+  },
+  {
+    "stop_id": "70756",
+    "name": "00432 - Greek Village",
+    "lat": 28.067751,
+    "lng": -82.407601
+  },
+  {
+    "stop_id": "70757",
+    "name": "00445 - Parking Lot 35",
+    "lat": 28.065637,
+    "lng": -82.407396
+  },
+  {
+    "stop_id": "70758",
+    "name": "00446 - Greek Park",
+    "lat": 28.065764,
+    "lng": -82.40739
+  },
+  {
+    "stop_id": "70759",
+    "name": "00449 - Holly Dr at 50th St",
+    "lat": 28.066294491,
+    "lng": -82.402335128
+  },
+  {
+    "stop_id": "70760",
+    "name": "00501 - McKinley Dr at Fowler Ave",
+    "lat": 28.053438,
+    "lng": -82.416371
+  },
+  {
+    "stop_id": "70761",
+    "name": "00503 - Moffitt McKinley Campus",
+    "lat": 28.050864,
+    "lng": -82.416401
+  },
+  {
+    "stop_id": "70762",
+    "name": "00504 - McKinley Dr to Library",
+    "lat": 28.050517,
+    "lng": -82.416145
+  },
+  {
+    "stop_id": "70763",
+    "name": "00505 - McKinley Dr at Bougainvillea Ave",
+    "lat": 28.044231,
+    "lng": -82.416411
+  },
+  {
+    "stop_id": "70764",
+    "name": "00508 - McKinley Dr at Bougainvillea Ave",
+    "lat": 28.044221,
+    "lng": -82.416141
+  },
+  {
+    "stop_id": "152014",
+    "name": "00530 - The Retreat",
+    "lat": 28.051611,
+    "lng": -82.409944
+  },
+  {
+    "stop_id": "70765",
+    "name": "00601 - Busch Gardens Employee Entrance",
+    "lat": 28.043489,
+    "lng": -82.419828
+  },
+  {
+    "stop_id": "70766",
+    "name": "00700 - The Standard to MSC",
+    "lat": 28.057019,
+    "lng": -82.428258
+  },
+  {
+    "stop_id": "70767",
+    "name": "00701 - The Standard to Library",
+    "lat": 28.056951,
+    "lng": -82.428143
+  },
+  {
+    "stop_id": "120740",
+    "name": "00704 - HUB Tampa to Library",
+    "lat": 28.058393628,
+    "lng": -82.431536983
+  },
+  {
+    "stop_id": "135822",
+    "name": "00705 - HUB Tampa to MSC",
+    "lat": 28.058181412,
+    "lng": -82.432321705
+  },
+  {
+    "stop_id": "70768",
+    "name": "00709 - N 22nd St at University Village to MSC",
+    "lat": 28.061565963,
+    "lng": -82.434491189
+  },
+  {
+    "stop_id": "70769",
+    "name": "00711 - N 22nd St at University Village",
+    "lat": 28.061298,
+    "lng": -82.434612
+  },
+  {
+    "stop_id": "70770",
+    "name": "00712 - N 22nd St at University Lake Dr",
+    "lat": 28.063223,
+    "lng": -82.434555
+  },
+  {
+    "stop_id": "70771",
+    "name": "00713 - N 22nd St at Vollmer Way",
+    "lat": 28.062882,
+    "lng": -82.434639
+  },
+  {
+    "stop_id": "70772",
+    "name": "00715 - UATC to MSC",
+    "lat": 28.06548873,
+    "lng": -82.42918424
+  },
+  {
+    "stop_id": "70773",
+    "name": "00716 - UATC to Library",
+    "lat": 28.065564,
+    "lng": -82.42987
+  },
+  {
+    "stop_id": "70774",
+    "name": "00717 - E 131st Ave to MSC",
+    "lat": 28.065505,
+    "lng": -82.432496
+  },
+  {
+    "stop_id": "70775",
+    "name": "00718 - E 131st Ave to Library",
+    "lat": 28.065555,
+    "lng": -82.432391
+  },
+  {
+    "stop_id": "70776",
+    "name": "00801 - N 46th St at Uptown Landing",
+    "lat": 28.0723,
+    "lng": -82.40991
+  },
+  {
+    "stop_id": "70777",
+    "name": "00803 - N 46th St at Shadow Moss Ln",
+    "lat": 28.075023,
+    "lng": -82.409953
+  },
+  {
+    "stop_id": "70778",
+    "name": "00807 - N 46th St at USF Golf Center",
+    "lat": 28.077039,
+    "lng": -82.409994
+  },
+  {
+    "stop_id": "70779",
+    "name": "00815 - Skipper Rd at 43rd St",
+    "lat": 28.080391,
+    "lng": -82.412428
+  },
+  {
+    "stop_id": "70780",
+    "name": "00821 - N 42nd St at Hellenic Dr",
+    "lat": 28.078266,
+    "lng": -82.414147
+  },
+  {
+    "stop_id": "70781",
+    "name": "00827 - N 42nd St at Cambridge Woods Dr",
+    "lat": 28.076153,
+    "lng": -82.414147
+  },
+  {
+    "stop_id": "70783",
+    "name": "00829 - N 42nd St at Rocky Circle",
+    "lat": 28.072141,
+    "lng": -82.414037
+  },
+  {
+    "stop_id": "182781",
+    "name": "00904 - N 50th at Holly Drive",
+    "lat": 28.066159992,
+    "lng": -82.401806689
+  },
+  {
+    "stop_id": "70784",
+    "name": "00905 - N 50th St at Bordeaux Village Pl",
+    "lat": 28.063471532,
+    "lng": -82.401964775
+  },
+  {
+    "stop_id": "182783",
+    "name": "00906 - N 50th at Bordeaux Vil",
+    "lat": 28.063632226,
+    "lng": -82.401787914
+  },
+  {
+    "stop_id": "70785",
+    "name": "00911 - N 50th St at Elm Dr",
+    "lat": 28.060482,
+    "lng": -82.401919
+  },
+  {
+    "stop_id": "70786",
+    "name": "00966 - The Hub",
+    "lat": 28.067926,
+    "lng": -82.411776
+  },
+  {
+    "stop_id": "70787",
+    "name": "00970 - Parking Lot 56",
+    "lat": 28.067915839,
+    "lng": -82.410396477
+  },
+  {
+    "stop_id": "70788",
+    "name": "00971 - Publix",
+    "lat": 28.068043501,
+    "lng": -82.411765152
+  },
+  {
+    "stop_id": "88162",
+    "name": "Alumni Stop",
+    "lat": 28.058581016,
+    "lng": -82.411579182
+  },
+  {
+    "stop_id": "144837",
+    "name": "Bulls Stop",
+    "lat": 28.056659968,
+    "lng": -82.408565012
+  },
+  {
+    "stop_id": "113414",
+    "name": "Gold Stop",
+    "lat": 28.060279141,
+    "lng": -82.40883202
+  },
+  {
+    "stop_id": "113413",
+    "name": "Green Stop",
+    "lat": 28.060275591,
+    "lng": -82.408624149
+  },
+  {
+    "stop_id": "222489",
+    "name": "Magnolia Drive",
+    "lat": 28.060178977,
+    "lng": -82.419849592
+  },
+  {
+    "stop_id": "88161",
+    "name": "Rocky Stop",
+    "lat": 28.062820985,
+    "lng": -82.408912307
+  }
+]
