@@ -12,16 +12,15 @@ npm run dev          # http://localhost:5173
 
 The map works right away with **mock data** (a real sample recorded from Passio). An amber badge in the bottom-left corner shows when mock data is in use.
 
-## Switch to the real backend
+## Use the real backend locally
 
-Copy `.env.example` to `.env`:
+By default the app calls the live Flask backend at `/api/buses`. In development, Vite proxies `/api/*` to Flask on `http://127.0.0.1:5001` and strips the `/api` prefix, mirroring `vercel.json` in production. No `.env` is needed. Start Flask from the repo root first (see `BACKEND.md`):
 
 ```bash
-VITE_API_URL=http://localhost:8000   # where the FastAPI backend runs
-VITE_USE_MOCK=false                  # call GET /buses instead of mock data
+flask --app app run --debug --port 5001
 ```
 
-Restart `npm run dev` after changing `.env`.
+To use mock buses instead (for example, when no buses are running), create `frontend/.env` with `VITE_USE_MOCK=true` and restart `npm run dev`. Don't set `VITE_API_URL` locally unless you are pointing at a different backend.
 
 ## Where the data comes from
 
