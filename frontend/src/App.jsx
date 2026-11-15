@@ -20,6 +20,8 @@ export default function App() {
         onSelectRoute={setSelectedRoute}
         lastUpdated={lastUpdated}
         alerts={alerts}
+        dataError={error}
+        isMock={isMock}
       />
 
       <main className="relative flex-1">
