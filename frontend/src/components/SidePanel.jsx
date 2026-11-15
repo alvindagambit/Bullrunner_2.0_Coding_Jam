@@ -36,6 +36,7 @@ export default function SidePanel({
   }, [lastUpdated])
 
   const liveBusesCount = buses.length
+  const staleBusCount = buses.filter((bus) => bus.outdatedGps === true).length
   const activeRoutesCount = new Set(buses.map((b) => b.route).filter(Boolean)).size
 
   // Backend contract: load is 0–100 percent, or null when unavailable.
@@ -54,7 +55,10 @@ export default function SidePanel({
   }, {})
 
   return (
-    <aside className="z-10 flex h-full w-80 shrink-0 flex-col border-r border-slate-200 bg-white shadow-lg select-none md:w-96">
+    // The whole panel scrolls as one at every size, so routes stay reachable however
+    // much height the header, stats and banners take (phones, landscape, short windows).
+    // On a tall desktop everything fits and nothing scrolls.
+    <aside className="z-10 flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain border-t border-slate-200 bg-white shadow-lg select-none md:border-t-0 md:border-r">
       {/* USF Header */}
       <div className="flex flex-col gap-1 border-b-4 border-[#CFC096] bg-[#006747] p-4 text-white">
         <div className="flex items-center justify-between">
@@ -127,6 +131,12 @@ export default function SidePanel({
         </div>
       </div>
 
+      {staleBusCount > 0 && (
+        <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+          <strong>GPS signal delayed:</strong> {staleBusCount} bus{staleBusCount === 1 ? "" : "es"} reported with an outdated location. Verify positions before relying on them.
+        </div>
+      )}
+
       {!isMock && lastUpdated && !dataError && buses.length === 0 && (
         <div role="status" className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
           No active buses reported right now. Routes and stops remain available.
@@ -134,7 +144,7 @@ export default function SidePanel({
       )}
 
       {/* Route List Filter */}
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
+      <div className="flex flex-none flex-col gap-2 p-4 md:flex-1">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-xs font-bold tracking-wider text-slate-500 uppercase">
             Campus Routes ({routes.length})
@@ -154,6 +164,7 @@ export default function SidePanel({
           const isSelected = selectedRoute === route.name
           const busCount = busCountByRoute[route.name] || 0
           const hasBuses = busCount > 0
+          const staleOnRoute = buses.filter((bus) => bus.route === route.name && bus.outdatedGps === true).length
 
           return (
             <button
@@ -178,6 +189,11 @@ export default function SidePanel({
                   <div className="text-[11px] text-slate-500">
                     {hasBuses ? `${busCount} bus${busCount > 1 ? 'es' : ''} running` : 'No active buses'}
                   </div>
+                  {staleOnRoute > 0 && (
+                    <div className="text-[11px] font-semibold text-amber-700">
+                      {staleOnRoute} GPS stale
+                    </div>
+                  )}
                 </div>
               </div>
 
