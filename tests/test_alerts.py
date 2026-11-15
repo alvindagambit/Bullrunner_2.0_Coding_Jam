@@ -115,6 +115,11 @@ class TestServiceAlerts(unittest.TestCase):
             # Words and tokens that resemble tag names but are real content.
             "Board at stop A or B and/or transfer at a stop near Building P; route 24/7 on 08/24/2026.",
             "Call 813.974.6902 ext. 5, visit usf.edu/bullrunner or email a@usf.edu.",
+            # Addresses, times, dates and abbreviations.
+            "Stops moved to 4202 E. Fowler Ave, Tampa, FL 33620 (Bldg. ALN 147).",
+            "Use the stop at 12901 Bruce B. Downs Blvd. near Lot 43; Suite 100/B is closed.",
+            "Detour via USF Pine Dr & Leroy Collins Blvd from 8:00 a.m. to 5:30 p.m. on 11/16/2026.",
+            "Br. Smith and P. Jones will assist riders at Lot P; see usf.edu/bullrunner/alerts?id=5&p=2.",
         ]
         for text in cases:
             with self.subTest(text=text[:40]):
