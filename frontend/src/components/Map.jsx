@@ -81,13 +81,22 @@ export default function BusMap({ routes, stops, buses, selectedRoute = null, onS
             key={bus.id}
             center={[bus.lat, bus.lng]}
             radius={9}
-            pathOptions={{ color: '#ffffff', weight: 3, fillColor: bus.color, fillOpacity: 1 }}
+            pathOptions={{
+              color: bus.outdatedGps === true ? '#64748b' : '#ffffff',
+              weight: bus.outdatedGps === true ? 2 : 3,
+              dashArray: bus.outdatedGps === true ? '4 3' : undefined,
+              fillColor: bus.outdatedGps === true ? '#94a3b8' : (bus.color || '#006747'),
+              fillOpacity: bus.outdatedGps === true ? 0.6 : 1,
+            }}
           >
             <Tooltip direction="top" offset={[0, -10]}>
               <strong>{bus.route}</strong>
               <br />
               Bus {bus.id}
               {formatLoad(bus.load) && ` · ${formatLoad(bus.load)}`}
+              {bus.outdatedGps === true && (
+                <div className="font-semibold text-amber-800">GPS signal stale — location may be outdated</div>
+              )}
             </Tooltip>
           </CircleMarker>
         ))}

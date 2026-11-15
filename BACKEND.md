@@ -93,7 +93,7 @@ Returns a JSON array of **in-service** USF buses. When no buses are running
 | `route` | string or null | Route name, for example `"Plum"` |
 | `color` | string or null | Route color as hex, for example `"#8f0154"` |
 | `load` | number or null | Occupancy **percentage from 0 to 100**, 1 decimal place. Calculated as `paxLoad / totalCap * 100` and capped at 100. `null` when passenger count or capacity is unavailable. |
-| `outdatedGps` | boolean | `true` when PassioGo reports the GPS position as stale. The bus is still included. **The frontend does not yet display this flag**, so stale positions currently look live. |
+| `outdatedGps` | boolean | `true` when PassioGo reports the GPS position as stale. The bus is still included. The frontend marks stale bus positions with muted dashed markers and visible route-panel warnings. |
 
 ### Additional fields
 

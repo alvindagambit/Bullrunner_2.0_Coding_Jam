@@ -82,7 +82,7 @@ curl -s http://localhost:5173/api/buses    # through the Vite proxy
 
 ## Known limitations
 
-- **Stale GPS isn't shown**: the backend flags stale positions with `outdatedGps`, but the map doesn't display it yet, so those buses look live.
+- **Stale GPS is flagged**: buses with `outdatedGps: true` are shown with muted dashed map markers and warnings in the route panel. Their positions may be outdated.
 - **Alerts require live verification**: GTFS-Realtime integration must be tested against the upstream feed before release; errors must never be treated as no advisories.
 - **MSC Express has no route line**: the route exists in PassioGo but not in the GTFS data, so its buses appear without a line.
 - **No CI**: tests and lint only run locally. Vercel builds each PR, but it doesn't run the tests.
