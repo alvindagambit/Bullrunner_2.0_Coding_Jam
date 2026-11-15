@@ -8,6 +8,6 @@ async function getMockAlerts() {
 
 /** Service alerts, refreshed every 60 seconds. */
 export function useAlerts() {
-  const { data } = usePolling(USE_MOCK ? getMockAlerts : fetchAlerts, ALERTS_POLL_MS)
-  return { alerts: data ?? [] }
+  const { data, error, lastUpdated } = usePolling(USE_MOCK ? getMockAlerts : fetchAlerts, ALERTS_POLL_MS)
+  return { alerts: data ?? [], error, lastUpdated, isMock: USE_MOCK }
 }

@@ -8,7 +8,7 @@ import { useStaticData } from './hooks/useStaticData'
 export default function App() {
   const { routes, stops, fromMock: staticFromMock } = useStaticData()
   const { buses, error, isMock, lastUpdated } = useBuses()
-  const { alerts } = useAlerts()
+  const { alerts, error: alertsError, lastUpdated: alertsUpdated } = useAlerts()
   const [selectedRoute, setSelectedRoute] = useState(null)
 
   return (
@@ -20,6 +20,8 @@ export default function App() {
         onSelectRoute={setSelectedRoute}
         lastUpdated={lastUpdated}
         alerts={alerts}
+        alertsError={alertsError}
+        alertsUpdated={alertsUpdated}
         dataError={error}
         isMock={isMock}
       />

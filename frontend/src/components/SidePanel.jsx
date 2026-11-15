@@ -18,6 +18,8 @@ export default function SidePanel({
   onSelectRoute = () => {},
   lastUpdated = null,
   alerts = [],
+  alertsError = null,
+  alertsUpdated = null,
   dataError = null,
   isMock = false,
 }) {
@@ -72,6 +74,18 @@ export default function SidePanel({
         </div>
       </div>
 
+      {/* Alerts status is distinct from "no active alerts". */}
+      {alertsError && !isMock && (
+        <div role="alert" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+          <strong>Service alerts unavailable.</strong> We cannot confirm whether USF has any current advisories.
+        </div>
+      )}
+      {!alertsError && alertsUpdated && !isMock && alerts.length === 0 && (
+        <div role="status" className="border-b border-slate-200 px-4 py-2 text-xs text-slate-500">
+          No current service alerts reported.
+        </div>
+      )}
+
       {/* Alerts Banner */}
       {alerts.length > 0 && (
         <div className="border-b border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900">
@@ -81,6 +95,9 @@ export default function SidePanel({
           {alerts.map((alert) => (
             <p key={alert.id ?? alert.name} className="leading-tight">
               {alert.name ?? alert.message ?? 'Service advisory in effect.'}
+              {alert.message && alert.message !== alert.name && (
+                <span className="mt-1 block font-normal whitespace-pre-line">{alert.message}</span>
+              )}
             </p>
           ))}
         </div>

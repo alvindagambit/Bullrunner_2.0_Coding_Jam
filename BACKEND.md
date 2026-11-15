@@ -125,20 +125,28 @@ response is:
 
 with status **`502`**. Details are logged on the server only.
 
-## `GET /alerts` (not implemented)
+## `GET /alerts` (official USF service alerts)
 
-**Outstanding limitation.** There is no `/alerts` route yet, so Flask returns
-`404`. The frontend polls `/api/alerts` every 60 seconds. On a `404` it hides
-the alerts banner instead of showing an error, so the app doesn't break. But
-**real USF service alerts are never shown**, and an empty banner does not mean
-there are no alerts. When implemented, the side panel expects
-`[{ "id": ..., "name": "..." }]`.
+Fetches the [USF GTFS-Realtime service-alert feed](https://passio3.com/usf/passioTransit/gtfs/realtime/serviceAlerts).
+Returns `200` with `[{ "id": "1", "name": "Advisory", "message": "Details" }]`,
+or `200 []` when the feed reports no active advisories.
+Expired and future-dated advisories are excluded. The frontend polls
+`/api/alerts` every 60 seconds.
+
+If the feed is unavailable or invalid, the endpoint returns `502` with
+`{"error":"Service alerts temporarily unavailable"}`, and the frontend
+displays an **alerts unavailable** warning, not a false "no alerts" result.
+
+**Release gate:** Verify real feed access and alert contents on Vercel before
+merging this PR.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `app.py` | Flask app: `/` homepage and `/buses` route |
+| `app.py` | Flask routes: `/`, `/buses`, `/alerts` |
+| `gtfs_alerts.py` | Parses official GTFS-Realtime service alerts |
+| `tests/test_alerts.py` | Offline alert tests |
 | `passio_client.py` | Fetches and validates live bus data from PassioGo |
 | `tests/test_buses.py` | Automated tests for `/buses` |
 | `requirements.txt` | Pinned backend dependencies |
