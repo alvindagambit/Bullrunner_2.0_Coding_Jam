@@ -1,7 +1,7 @@
 """Read-only live feed checks for Bullrunner 2.0.
 
 From the repository root after activating the venv:
-    pip install gtfs-realtime-bindings==3.0.0
+    pip install gtfs-realtime-bindings==3.0.0 protobuf==7.36.2
     python scripts/verify_live_transit.py
 
 Checks production bus locations against USF's independently published
@@ -64,9 +64,27 @@ def matches(bus, vehicles):
     return result
 
 
+VehicleStatus = gtfs_realtime_pb2.VehiclePosition.VehicleStopStatus
+UPCOMING_STATUSES = (VehicleStatus.INCOMING_AT, VehicleStatus.IN_TRANSIT_TO)
+
+
+def describe_status(vehicle):
+    """Return (reported, status, label) for VehiclePosition.current_status.
+
+    current_status is optional in GTFS-Realtime. When the feed omits it, protobuf
+    returns the spec default IN_TRANSIT_TO, which is an assumption, not a report.
+    The label always says which case applies.
+    """
+    status = vehicle.current_status
+    name = VehicleStatus.Name(status)
+    if vehicle.HasField("current_status"):
+        return True, status, f"{name} (reported)"
+    return False, status, f"{name} (ASSUMED: not reported by feed; GTFS-RT default)"
+
+
 def inspect_snapshot(buses, vehicles, stops, routes):
     print(f"Production buses: {len(buses)} | Official GTFS-RT vehicles: {len(vehicles)}")
-    match_count, verified_count, next_stop_count = 0, 0, 0
+    match_count, verified_count, next_stop_count, explicit_status_count = 0, 0, 0, 0
     now = int(time.time())
     for bus in buses:
         found = matches(bus, vehicles)
@@ -105,14 +123,23 @@ def inspect_snapshot(buses, vehicles, stops, routes):
 
         # In GTFS-RT, an IN_TRANSIT_TO/INCOMING_AT stop_id identifies the
         # upcoming stop, but only after vehicle ID and GPS have been validated.
-        status = vehicle.current_status
+        status_reported, status, status_label = describe_status(vehicle)
+        if status_reported:
+            explicit_status_count += 1
         stop_id = vehicle.stop_id if vehicle.HasField("stop_id") else ""
-        if close and fresh and route_ok and not bus.get("outdatedGps") and status in (0, 2) and stop_id in stops:
+        sequence = vehicle.current_stop_sequence if vehicle.HasField("current_stop_sequence") else None
+        print(f"    current_status: {status_label}; stop_id={stop_id or 'none'}; current_stop_sequence={sequence}")
+        if close and fresh and route_ok and not bus.get("outdatedGps") and status in UPCOMING_STATUSES and stop_id in stops:
             next_stop_count += 1
-            print(f"    Candidate upcoming stop: {stops[stop_id]['name']} (ID {stop_id}); confirm against Passio GO")
+            basis = "status reported by feed" if status_reported else "status ASSUMED (GTFS-RT default, not reported)"
+            print(f"    Candidate upcoming stop: {stops[stop_id]['name']} (ID {stop_id}); {basis}; confirm against Passio GO")
         else:
-            print("    Next stop: NOT VERIFIED (missing stop ID, uncertain match, or stale data)")
-    print(f"Exact matches: {match_count}; close+fresh+route-compatible: {verified_count}; next-stop candidates: {next_stop_count}")
+            print("    Next stop: NOT VERIFIED (missing stop ID, at-stop status, uncertain match, or stale data)")
+    print(
+        f"Exact matches: {match_count}; close+fresh+route-compatible: {verified_count}; "
+        f"next-stop candidates: {next_stop_count}; "
+        f"current_status reported: {explicit_status_count}/{match_count} (others assumed IN_TRANSIT_TO)"
+    )
     return {str(b["id"]): b for b in buses if b.get("id") is not None}
 
 
