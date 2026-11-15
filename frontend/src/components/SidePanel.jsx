@@ -18,6 +18,8 @@ export default function SidePanel({
   onSelectRoute = () => {},
   lastUpdated = null,
   alerts = [],
+  dataError = null,
+  isMock = false,
 }) {
   const [secondsAgo, setSecondsAgo] = useState(0)
 
@@ -104,9 +106,15 @@ export default function SidePanel({
           <span className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase">
             Avg Load
           </span>
-          <span className="text-2xl font-black text-[#006747]">{avgLoad}%</span>
+          <span className="text-2xl font-black text-[#006747]">{validLoads.length ? `${avgLoad}%` : '—'}</span>
         </div>
       </div>
+
+      {!isMock && lastUpdated && !dataError && buses.length === 0 && (
+        <div role="status" className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          No active buses reported right now. Routes and stops remain available.
+        </div>
+      )}
 
       {/* Route List Filter */}
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
