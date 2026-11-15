@@ -142,9 +142,13 @@ dist
 __pycache__/
 *.pyc
 
-# Environment variables
+# Environment variables (local secrets). Templates stay trackable.
 .env
 .env.*
+!.env.example
+
+# Vercel CLI local project link
+.vercel/
 
 # macOS
 .DS_Store

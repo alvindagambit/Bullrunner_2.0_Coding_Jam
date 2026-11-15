@@ -2,7 +2,7 @@
 //
 // buses.json, routes.json and stops.json in this folder are a REAL sample
 // recorded from Passio (USF system 2343), already converted to the
-// CONTRACT.md format. Each call moves every bus a few points along its route,
+// /buses format (see BACKEND.md). Each call moves every bus a few points along its route,
 // so you can see them drive around campus.
 
 import routes from './routes.json'

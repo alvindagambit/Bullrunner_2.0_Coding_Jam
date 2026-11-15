@@ -3,6 +3,10 @@
 Python Flask backend that serves live USF Bull Runner vehicle positions from
 PassioGo (USF system ID `2343`).
 
+This file is the source of truth for the backend API contract. The frontend's
+static data formats (`routes.json`, `stops.json`) are documented in
+[`frontend/README.md`](frontend/README.md).
+
 ## Setup
 
 Requires Python 3 (developed on 3.15). Run from the repo root.
@@ -16,7 +20,7 @@ pip install -r requirements.txt
 ## Run the server
 
 ```bash
-flask --app app run --port 5001
+flask --app app run --debug --port 5001
 ```
 
 Use port **5001**. On macOS, port 5000 is taken by the AirPlay Receiver and
@@ -24,6 +28,22 @@ returns 403 errors that do not come from Flask.
 
 - Homepage: <http://127.0.0.1:5001/>
 - Live buses: <http://127.0.0.1:5001/buses>
+
+`--debug` enables auto-reload for local development. Do not use the Flask
+development server in production.
+
+## How the frontend reaches this API
+
+The frontend always calls `/api/buses`. The `/api` prefix is stripped before
+the request reaches Flask, so Flask itself serves `/buses`:
+
+| Environment | `/api/*` is handled by | Flask receives |
+|---|---|---|
+| Local development | Vite proxy (`frontend/vite.config.js`) to `http://127.0.0.1:5001` | `/buses` |
+| Production | Vercel rewrite (`frontend/vercel.json`) to the deployed backend | `/buses` |
+
+CORS is not enabled because the browser only ever talks to the frontend's own
+origin.
 
 ## Test
 
@@ -73,9 +93,11 @@ Returns a JSON array of **in-service** USF buses. When no buses are running
 | `route` | string or null | Route name, for example `"Plum"` |
 | `color` | string or null | Route color as hex, for example `"#8f0154"` |
 | `load` | number or null | Occupancy **percentage from 0 to 100**, 1 decimal place. Calculated as `paxLoad / totalCap * 100` and capped at 100. `null` when passenger count or capacity is unavailable. |
-| `outdatedGps` | boolean | `true` when PassioGo reports the GPS position as stale. The bus is still included. **The frontend should show these differently, for example greyed out, so stale positions do not look live.** |
+| `outdatedGps` | boolean | `true` when PassioGo reports the GPS position as stale. The bus is still included. **The frontend does not yet display this flag**, so stale positions currently look live. |
 
-### Additional fields (may change once the frontend contract is final)
+### Additional fields
+
+The current frontend does not use these.
 
 | Field | Type | Description |
 |---|---|---|
@@ -103,6 +125,12 @@ response is:
 
 with status **`502`**. Details are logged on the server only.
 
+## `GET /alerts` (not implemented)
+
+There is no `/alerts` route yet, so Flask returns `404`. The frontend already
+polls `/api/alerts` every 60 seconds and treats a `404` as "no alerts", so this
+is safe. When implemented, the side panel expects `[{ "id": ..., "name": "..." }]`.
+
 ## Files
 
 | File | Purpose |
@@ -110,7 +138,7 @@ with status **`502`**. Details are logged on the server only.
 | `app.py` | Flask app: `/` homepage and `/buses` route |
 | `passio_client.py` | Fetches and validates live bus data from PassioGo |
 | `tests/test_buses.py` | Automated tests for `/buses` |
-| `inspect_passio.py`, `test_passio.py` | Local diagnostic scripts, not used by the app |
+| `requirements.txt` | Pinned backend dependencies |
 
 > **Why not `passiogo.getVehicles()`?** PassioGo 0.2.2 has a bug: its `Vehicle`
 > object stores latitude as longitude and drops the real longitude.

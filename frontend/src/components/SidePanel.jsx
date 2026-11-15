@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 /**
  * Control-room side panel for Bull Runner Live.
  *
- * Props (data shapes follow CONTRACT.md):
+ * Props (formats: BACKEND.md for buses, frontend/README.md for routes/stops):
  *   buses         [{ id, lat, lng, route, color, load }]
  *   routes        [{ id, name, color, points }]
  *   selectedRoute currently selected route name, or null for all
