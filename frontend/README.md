@@ -42,7 +42,7 @@ routes.json    -> [{ id, name, color, points: [[lat, lng], ...] }]
 stops.json     -> [{ id, name, lat, lng }]
 ```
 
-`route` in `/buses` must match `name` in `routes.json` exactly; otherwise route filtering won't line up. `outdatedGps` is sent by the backend but not yet displayed.
+`route` in `/buses` must match `name` in `routes.json` exactly; otherwise route filtering won't line up. `outdatedGps` is used to visually distinguish stale bus locations and show route-level warnings.
 
 ## Files
 
