@@ -17,8 +17,8 @@ export async function fetchBuses() {
 
 export async function fetchAlerts() {
   const res = await fetch(`${API_URL}/alerts`)
-  if (res.status === 404) return []
   if (!res.ok) throw new Error(`GET /alerts failed: HTTP ${res.status}`)
   const alerts = await res.json()
-  return Array.isArray(alerts) ? alerts : []
+  if (!Array.isArray(alerts)) throw new Error("GET /alerts did not return an array")
+  return alerts
 }
