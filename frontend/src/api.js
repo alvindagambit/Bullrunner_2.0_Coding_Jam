@@ -11,7 +11,7 @@ export async function fetchBuses() {
 
   // Make sure numbers are numbers, so the map never gets strings.
   return buses
-    .map((b) => ({ ...b, lat: Number(b.lat), lng: Number(b.lng), load: Number(b.load) }))
+    .map((b) => ({ ...b, lat: Number(b.lat), lng: Number(b.lng), load: b.load == null ? null : Number(b.load) }))
     .filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng))
 }
 
