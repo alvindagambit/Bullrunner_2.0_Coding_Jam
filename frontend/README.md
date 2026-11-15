@@ -10,13 +10,14 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-The map works right away with **mock data** (a real sample recorded from Passio). An amber badge in the bottom-left corner shows when mock data is in use.
+By default the app shows **live** buses from the Flask backend, so start Flask first (below). A red badge in the bottom-left corner appears if the backend can't be reached. An amber badge appears whenever mock data is in use.
 
 ## Use the real backend locally
 
-By default the app calls the live Flask backend at `/api/buses`. In development, Vite proxies `/api/*` to Flask on `http://127.0.0.1:5001` and strips the `/api` prefix, mirroring `vercel.json` in production. No `.env` is needed. Start Flask from the repo root first (see `BACKEND.md`):
+By default the app calls the live Flask backend at `/api/buses`. In development, Vite proxies `/api/*` to Flask on `http://127.0.0.1:5001` and strips the `/api` prefix, mirroring `vercel.json` in production. No `.env` is needed. Start Flask from the repo root first (first-time setup is in `BACKEND.md`):
 
 ```bash
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 flask --app app run --debug --port 5001
 ```
 
@@ -24,34 +25,41 @@ To use mock buses instead (for example, when no buses are running), create `fron
 
 ## Where the data comes from
 
-| Data | Source | Fallback while it doesn't exist yet |
+| Data | Source | Fallback |
 | --- | --- | --- |
-| Route lines | `public/routes.json` (Carlos's GTFS script) | `src/mock/routes.json` |
-| Stops | `public/stops.json` (Carlos's GTFS script) | `src/mock/stops.json` |
-| Buses, every 5 s | `GET {VITE_API_URL}/buses` (backend) | `src/mock/mockBuses.js` (moves buses along their routes) |
+| Route lines | `public/routes.json` (Carlos's GTFS script, `gtfs/convert_gtfs.py`) | `src/mock/routes.json` if the file can't be loaded |
+| Stops | `public/stops.json` (Carlos's GTFS script) | `src/mock/stops.json` if the file can't be loaded |
+| Buses, every 5 s | `GET /api/buses` (Flask backend) | `src/mock/mockBuses.js` when `VITE_USE_MOCK=true` (moves buses along their routes) |
+| Alerts, every 60 s | `GET /api/alerts`: **not implemented yet** (outstanding limitation). The backend returns `404` and the banner stays hidden, so real service alerts are never shown. | none |
 
-All shapes follow `CONTRACT.md`:
+### Data formats
+
+The `/buses` contract is defined in [`BACKEND.md`](../BACKEND.md) (the source of truth). That includes `load` (a percentage from 0 to 100, or `null`) and `outdatedGps`. The fields the frontend uses:
 
 ```
-GET /buses   -> [{ id, lat, lng, route, color, load }]
-routes.json  -> [{ id, name, color, points: [[lat, lng], ...] }]
-stops.json   -> [{ id, name, lat, lng }]
+GET /api/buses -> [{ id, lat, lng, route, color, load }]
+routes.json    -> [{ id, name, color, points: [[lat, lng], ...] }]
+stops.json     -> [{ id, name, lat, lng }]
 ```
 
-`route` in `/buses` must match `name` in `routes.json` exactly; otherwise route filtering won't line up.
+`route` in `/buses` must match `name` in `routes.json` exactly; otherwise route filtering won't line up. `outdatedGps` is sent by the backend but not yet displayed.
 
 ## Files
 
 ```
 src/
-  App.jsx                 layout; holds selectedRoute state; slot for <SidePanel />
-  components/Map.jsx      the Leaflet map (routes, stops, buses)
-  hooks/usePolling.js     generic "call every N ms" hook (reuse it for /alerts)
-  hooks/useBuses.js       buses every 5 s (mock or backend)
-  hooks/useStaticData.js  loads routes.json + stops.json once
-  api.js                  fetchBuses()
-  config.js               API URL, mock switch, USF center, poll interval
-  mock/                   sample data in the contract format
+  App.jsx                   layout; holds selectedRoute state; renders SidePanel + Map
+  components/Map.jsx        the Leaflet map (routes, stops, buses)
+  components/SidePanel.jsx  route list, bus count, average load, alerts banner (Ana)
+  hooks/usePolling.js       generic "call every N ms" hook
+  hooks/useBuses.js         buses every 5 s (mock or backend)
+  hooks/useAlerts.js        alerts every 60 s
+  hooks/useStaticData.js    loads routes.json + stops.json once
+  api.js                    fetchBuses(), fetchAlerts()
+  config.js                 API URL (default /api), mock switch, USF center, poll intervals
+  mock/                     sample data in the formats above
+vite.config.js              dev proxy: /api/* -> Flask on 127.0.0.1:5001
+vercel.json                 production rewrite: /api/* -> deployed Flask backend
 ```
 
 ## Map interactions

@@ -18,7 +18,7 @@ function formatLoad(load) {
 /**
  * The live Bull Runner map.
  *
- * Props (all data follows CONTRACT.md):
+ * Props (formats: BACKEND.md for buses, frontend/README.md for routes/stops):
  *   routes        [{ id, name, color, points: [[lat, lng], ...] }]
  *   stops         [{ id, name, lat, lng }]
  *   buses         [{ id, lat, lng, route, color, load }]

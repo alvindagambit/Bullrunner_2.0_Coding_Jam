@@ -1,4 +1,4 @@
-// Talks to our backend. Shapes follow CONTRACT.md:
+// Talks to our backend. Shapes follow BACKEND.md (the /buses contract):
 //   GET /buses -> [{ id, lat, lng, route, color, load }]
 
 import { API_URL } from './config'
