@@ -3,6 +3,7 @@ import logging
 from flask import Flask, jsonify
 
 from passio_client import get_usf_buses
+from gtfs_alerts import get_usf_alerts
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -18,6 +19,15 @@ def buses():
     except Exception:
         logger.exception("Failed to fetch live buses from PassioGo")
         return jsonify({"error": "Failed to fetch live buses"}), 502
+
+@app.route("/alerts")
+def alerts():
+    try:
+        return jsonify(get_usf_alerts())
+    except Exception:
+        logger.exception("Failed to fetch official USF service alerts")
+        return jsonify({"error": "Service alerts temporarily unavailable"}), 502
+
 
 if __name__ == "__main__":
     app.run(debug=True)
