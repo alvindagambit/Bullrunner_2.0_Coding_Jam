@@ -30,7 +30,7 @@ To use mock buses instead (for example, when no buses are running), create `fron
 | Route lines | `public/routes.json` (Carlos's GTFS script, `gtfs/convert_gtfs.py`) | `src/mock/routes.json` if the file can't be loaded |
 | Stops | `public/stops.json` (Carlos's GTFS script) | `src/mock/stops.json` if the file can't be loaded |
 | Buses, every 5 s | `GET /api/buses` (Flask backend) | `src/mock/mockBuses.js` when `VITE_USE_MOCK=true` (moves buses along their routes) |
-| Alerts, every 60 s | `GET /api/alerts`: **not implemented yet** (outstanding limitation). The backend returns `404` and the banner stays hidden, so real service alerts are never shown. | none |
+| Alerts, every 60 s | `GET /api/alerts` from the official USF GTFS-Realtime feed | On upstream failure, show an unavailable warning; do not claim no advisories. |
 
 ### Data formats
 
