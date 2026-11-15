@@ -1,13 +1,13 @@
 // App-wide settings. Override them in frontend/.env (see .env.example).
 
-/** Backend base URL (FastAPI runs on :8000 per the team plan). */
-export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+/** Use Vercel's same-origin /api proxy by default; override for local development. */
+export const API_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '')
 
 /**
- * true  -> use the fake buses in src/mock/ (default until the backend is ready)
+ * true  -> use the fake buses in src/mock/ (demo mode)
  * false -> call GET {API_URL}/buses
  */
-export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') === 'true'
+export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'false') === 'true'
 
 /** USF Tampa, from the team plan. */
 export const USF_CENTER = [28.0587, -82.4139]
