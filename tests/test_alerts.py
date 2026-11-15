@@ -59,6 +59,74 @@ class TestServiceAlerts(unittest.TestCase):
         alerts = gtfs_alerts.get_usf_alerts(now=NOW)
         self.assertEqual(alerts, [{"id": "1", "name": "Construction delay", "message": "Red route delayed"}])
 
+    # Verbatim description_text of alert 3 from USF's live serviceAlerts feed
+    # (2026-11-15). The feed had already stripped "<" and ">", leaving bare tags.
+    MALFORMED_HOURS_ALERT = (
+        "Monday - Thursday 7:00 a.m. - midnight br - Brown, Green, Orange, Purple, Red br "
+        "- Blue: 7:00 a.m.-9:30 p.m. br br Friday 7:00 a.m. - 6:00 p.m. br - All routes br br "
+        "Saturday - Sunday 11:00 a.m. - 6:00 p.m. br - Brown, Orange, Plum, and Red br br "
+        "USF Holiday Closures br - November 11 br - November 26, 27 br br p For Bull Runner "
+        "service information, call a href tel:8139746902 813-974-6902 /a or visit a href "
+        "https://www.usf.edu/bullrunner/ usf.edu/BullRunner /a . /p"
+    )
+
+    def test_regression_bracketless_html_fragments_removed(self):
+        self.assertEqual(
+            gtfs_alerts._clean_text(self.MALFORMED_HOURS_ALERT),
+            "Monday - Thursday 7:00 a.m. - midnight\n"
+            "- Brown, Green, Orange, Purple, Red\n"
+            "- Blue: 7:00 a.m.-9:30 p.m.\n"
+            "\n"
+            "Friday 7:00 a.m. - 6:00 p.m.\n"
+            "- All routes\n"
+            "\n"
+            "Saturday - Sunday 11:00 a.m. - 6:00 p.m.\n"
+            "- Brown, Orange, Plum, and Red\n"
+            "\n"
+            "USF Holiday Closures\n"
+            "- November 11\n"
+            "- November 26, 27\n"
+            "\n"
+            "For Bull Runner service information, call 813-974-6902 or visit usf.edu/BullRunner.",
+        )
+
+    def test_regression_malformed_alert_through_endpoint(self):
+        self.request.return_value = fake_response(make_feed([
+            {"name": "Fall 2026 Hours of Operation: 08/24/2026 thru 12/13/2026",
+             "message": self.MALFORMED_HOURS_ALERT},
+        ]))
+        body = json.loads(self.client.get("/alerts").get_data(as_text=True))
+        self.assertEqual(body[0]["name"], "Fall 2026 Hours of Operation: 08/24/2026 thru 12/13/2026")
+        for fragment in (" br", "/a", "/p", "href", "tel:"):
+            self.assertNotIn(fragment, body[0]["message"])
+        self.assertIn("call 813-974-6902 or visit usf.edu/BullRunner.", body[0]["message"])
+
+    def test_legitimate_text_is_preserved(self):
+        cases = [
+            # Verbatim live alerts 1, 2 and 4 (no markup): must be unchanged.
+            "Passengers who use adaptive equipment can contact the USF Bull Runner to request an "
+            "accessible space on a specific bus route. To do so, please call (813) 974-6902. "
+            "It's recommended to make this call 20 to 30 minutes before you wish to board. "
+            "We ll ensure a space is reserved for you",
+            "Due to construction activities on Sycamore Drive, as well as off campus Club Drive, "
+            "expect minor delays on the Orange and Red routes. All stops remain open. "
+            "Please call 813-974-6902 for more info.",
+            "Weekdays, 2-3 p.m.: Expect up to a 10-minute delay due to driver shift changes.",
+            # Words and tokens that resemble tag names but are real content.
+            "Board at stop A or B and/or transfer at a stop near Building P; route 24/7 on 08/24/2026.",
+            "Call 813.974.6902 ext. 5, visit usf.edu/bullrunner or email a@usf.edu.",
+        ]
+        for text in cases:
+            with self.subTest(text=text[:40]):
+                self.assertEqual(gtfs_alerts._clean_text(text), text)
+
+    def test_real_html_breaks_and_tags(self):
+        self.assertEqual(
+            gtfs_alerts._clean_text("<b>Monday</b><br>Red<br/><br />Blue<p>Call <a href='tel:1'>813-974-6902</a>.</p>"),
+            "Monday\nRed\n\nBlue\nCall 813-974-6902.",
+        )
+        self.assertEqual(gtfs_alerts._clean_text("Tom &amp; Jerry &lt;b&gt;x&lt;/b&gt;"), "Tom & Jerry x")
+
     def test_expired_alert_is_ignored(self):
         self.request.return_value = fake_response(make_feed([
             {"name": "Old advisory", "start": NOW - 120, "end": NOW - 1},

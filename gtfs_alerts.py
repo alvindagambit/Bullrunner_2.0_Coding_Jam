@@ -22,9 +22,45 @@ class AlertsFeedError(Exception):
     """USF's service-alert feed is unavailable or malformed."""
 
 
+# Real HTML: line/paragraph breaks become newlines; every other tag is removed.
+_HTML_BREAK = re.compile(r"<\s*/?\s*(?:br|p)\b[^>]*>", re.IGNORECASE)
+_HTML_TAG = re.compile(r"<[^>]*>")
+
+# USF's feed sometimes arrives with the angle brackets already stripped, leaving
+# bare tag names ("br", "p", "/a", "a href tel:...") inside the text. Only
+# unambiguous fragments are removed, as whole whitespace-separated tokens:
+#   - "a href <target>" (link opener; the link's visible text is kept)
+#   - closing tags, which always start with "/"
+#   - the standalone words "br" and "p" (line/paragraph breaks)
+# Ordinary words such as the article "a", times ("p.m."), phone numbers, dates
+# and paths ("and/or", "08/24/2026") are left untouched.
+_BARE_LINK_OPEN = re.compile(r"(?<!\S)a\s+href\s*=?\s*\S+")
+_BARE_CLOSING_TAG = re.compile(
+    r"(?<!\S)/(?:a|b|i|u|p|em|strong|span|div|font|li|ul|ol)(?!\S)", re.IGNORECASE
+)
+_BARE_BREAK = re.compile(r"(?<!\S)(?:br|/?p)(?!\S)")
+_SPACE_BEFORE_PUNCTUATION = re.compile(r"\s+([.,;:!?])(?=\s|$)")
+
+
 def _clean_text(value):
-    """Render GTFS alert text safely as ordinary text, never raw HTML."""
-    return " ".join(unescape(re.sub(r"<[^>]*>", " ", value or "")).split())
+    """Render GTFS alert text safely as plain text, never raw HTML.
+
+    Line breaks are kept as "\\n" (at most one blank line in a row); all other
+    whitespace is collapsed.
+    """
+    text = unescape(value or "")
+    text = _HTML_BREAK.sub("\n", text)
+    text = _HTML_TAG.sub(" ", text)
+    text = _BARE_LINK_OPEN.sub(" ", text)
+    text = _BARE_CLOSING_TAG.sub(" ", text)
+    text = _BARE_BREAK.sub("\n", text)
+
+    lines = []
+    for raw_line in text.split("\n"):
+        line = _SPACE_BEFORE_PUNCTUATION.sub(r"\1", " ".join(raw_line.split()))
+        if line or (lines and lines[-1]):
+            lines.append(line)
+    return "\n".join(lines).strip()
 
 
 def _translation(message):

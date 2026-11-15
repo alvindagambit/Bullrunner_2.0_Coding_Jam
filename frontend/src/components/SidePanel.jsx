@@ -96,7 +96,7 @@ export default function SidePanel({
             <p key={alert.id ?? alert.name} className="leading-tight">
               {alert.name ?? alert.message ?? 'Service advisory in effect.'}
               {alert.message && alert.message !== alert.name && (
-                <span className="mt-1 block font-normal">{alert.message}</span>
+                <span className="mt-1 block font-normal whitespace-pre-line">{alert.message}</span>
               )}
             </p>
           ))}

@@ -20,6 +20,8 @@ export default function App() {
         onSelectRoute={setSelectedRoute}
         lastUpdated={lastUpdated}
         alerts={alerts}
+        alertsError={alertsError}
+        alertsUpdated={alertsUpdated}
         dataError={error}
         isMock={isMock}
       />
