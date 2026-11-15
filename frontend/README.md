@@ -14,9 +14,10 @@ By default the app shows **live** buses from the Flask backend, so start Flask f
 
 ## Use the real backend locally
 
-By default the app calls the live Flask backend at `/api/buses`. In development, Vite proxies `/api/*` to Flask on `http://127.0.0.1:5001` and strips the `/api` prefix, mirroring `vercel.json` in production. No `.env` is needed. Start Flask from the repo root first (see `BACKEND.md`):
+By default the app calls the live Flask backend at `/api/buses`. In development, Vite proxies `/api/*` to Flask on `http://127.0.0.1:5001` and strips the `/api` prefix, mirroring `vercel.json` in production. No `.env` is needed. Start Flask from the repo root first (first-time setup is in `BACKEND.md`):
 
 ```bash
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 flask --app app run --debug --port 5001
 ```
 
@@ -29,7 +30,7 @@ To use mock buses instead (for example, when no buses are running), create `fron
 | Route lines | `public/routes.json` (Carlos's GTFS script, `gtfs/convert_gtfs.py`) | `src/mock/routes.json` if the file can't be loaded |
 | Stops | `public/stops.json` (Carlos's GTFS script) | `src/mock/stops.json` if the file can't be loaded |
 | Buses, every 5 s | `GET /api/buses` (Flask backend) | `src/mock/mockBuses.js` when `VITE_USE_MOCK=true` (moves buses along their routes) |
-| Alerts, every 60 s | `GET /api/alerts` (not implemented yet; a `404` is treated as no alerts) | none |
+| Alerts, every 60 s | `GET /api/alerts`: **not implemented yet** (outstanding limitation). The backend returns `404` and the banner stays hidden, so real service alerts are never shown. | none |
 
 ### Data formats
 

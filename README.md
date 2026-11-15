@@ -61,7 +61,7 @@ Use port **5001** for Flask. On macOS, port 5000 is taken by the AirPlay Receive
 | Endpoint | Status |
 |---|---|
 | `GET /buses` | Implemented. Returns `[{ id, lat, lng, route, color, load, outdatedGps, ... }]`. `load` is a percentage from 0 to 100, or `null` when unavailable. `outdatedGps` is a boolean. Upstream failures return `502`. |
-| `GET /alerts` | **Not implemented** (returns `404`; the frontend treats that as no alerts) |
+| `GET /alerts` | **Not implemented** (outstanding). Returns `404`. The frontend hides the alerts banner instead of erroring, so real service alerts are never displayed. |
 
 Full field reference: [`BACKEND.md`](BACKEND.md).
 
@@ -83,7 +83,7 @@ curl -s http://localhost:5173/api/buses    # through the Vite proxy
 ## Known limitations
 
 - **Stale GPS isn't shown**: the backend flags stale positions with `outdatedGps`, but the map doesn't display it yet, so those buses look live.
-- **No alerts**: `/alerts` is not implemented.
+- **No service alerts**: `/alerts` is not implemented. The app runs normally without it, but real USF service alerts are never shown, and an empty alerts area doesn't mean there are none.
 - **MSC Express has no route line**: the route exists in PassioGo but not in the GTFS data, so its buses appear without a line.
 - **No CI**: tests and lint only run locally. Vercel builds each PR, but it doesn't run the tests.
 - **No caching**: every frontend poll (each tab, every 5 s) reaches PassioGo.

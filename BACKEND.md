@@ -127,9 +127,12 @@ with status **`502`**. Details are logged on the server only.
 
 ## `GET /alerts` (not implemented)
 
-There is no `/alerts` route yet, so Flask returns `404`. The frontend already
-polls `/api/alerts` every 60 seconds and treats a `404` as "no alerts", so this
-is safe. When implemented, the side panel expects `[{ "id": ..., "name": "..." }]`.
+**Outstanding limitation.** There is no `/alerts` route yet, so Flask returns
+`404`. The frontend polls `/api/alerts` every 60 seconds. On a `404` it hides
+the alerts banner instead of showing an error, so the app doesn't break. But
+**real USF service alerts are never shown**, and an empty banner does not mean
+there are no alerts. When implemented, the side panel expects
+`[{ "id": ..., "name": "..." }]`.
 
 ## Files
 
