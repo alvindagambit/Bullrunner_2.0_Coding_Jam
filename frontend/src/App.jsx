@@ -12,21 +12,23 @@ export default function App() {
   const [selectedRoute, setSelectedRoute] = useState(null)
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
-      <SidePanel
-        buses={buses}
-        routes={routes}
-        selectedRoute={selectedRoute}
-        onSelectRoute={setSelectedRoute}
-        lastUpdated={lastUpdated}
-        alerts={alerts}
-        alertsError={alertsError}
-        alertsUpdated={alertsUpdated}
-        dataError={error}
-        isMock={isMock}
-      />
+    <div className="flex h-dvh w-screen flex-col overflow-hidden md:flex-row">
+      <div className="order-2 h-[46dvh] min-h-0 w-full shrink-0 md:order-1 md:h-full md:w-96">
+        <SidePanel
+          buses={buses}
+          routes={routes}
+          selectedRoute={selectedRoute}
+          onSelectRoute={setSelectedRoute}
+          lastUpdated={lastUpdated}
+          alerts={alerts}
+          alertsError={alertsError}
+          alertsUpdated={alertsUpdated}
+          dataError={error}
+          isMock={isMock}
+        />
+      </div>
 
-      <main className="relative flex-1">
+      <main className="relative order-1 h-[54dvh] min-h-0 w-full shrink-0 md:order-2 md:h-full md:min-w-0 md:flex-1">
         <BusMap
           routes={routes}
           stops={stops}
