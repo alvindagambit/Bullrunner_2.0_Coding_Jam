@@ -53,7 +53,9 @@ export default function SidePanel({
   }, {})
 
   return (
-    <aside className="z-10 flex h-full min-h-0 w-full flex-col border-r border-slate-200 bg-white shadow-lg select-none">
+    // Mobile: the whole panel scrolls as one, so routes stay reachable however
+    // much space the header, stats and banners take. Desktop: only the route list scrolls.
+    <aside className="z-10 flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain border-t border-slate-200 bg-white shadow-lg select-none md:overflow-hidden md:border-t-0 md:border-r">
       {/* USF Header */}
       <div className="flex flex-col gap-1 border-b-4 border-[#CFC096] bg-[#006747] p-4 text-white">
         <div className="flex items-center justify-between">
@@ -124,7 +126,7 @@ export default function SidePanel({
       )}
 
       {/* Route List Filter */}
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
+      <div className="flex flex-none flex-col gap-2 p-4 md:min-h-0 md:flex-1 md:overflow-y-auto">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-xs font-bold tracking-wider text-slate-500 uppercase">
             Campus Routes ({routes.length})
