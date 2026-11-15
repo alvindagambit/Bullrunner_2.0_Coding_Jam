@@ -37,6 +37,7 @@ export async function getMockBuses() {
       ;[s.lat, s.lng] = route.points[s.index]
     }
     const { index: _index, ...bus } = s
-    return bus
+    // Mock fixtures store load as a 0–1 fraction; normalize to the live API's 0–100 percentage.
+    return { ...bus, load: bus.load == null ? null : bus.load * 100 }
   })
 }
