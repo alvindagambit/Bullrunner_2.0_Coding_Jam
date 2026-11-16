@@ -98,3 +98,4 @@ From the original hackathon team (see the git history for details):
 - **Sebastian Mejia**: frontend map (Vite, React, Tailwind, Leaflet)
 - **Anna Victoria**: side panel dashboard and alerts polling
 - **Carlos Cruz**: GTFS route and stop data, and the converter
+- **Constantine Millan**: backend alerts and backup stops endpoints, CORS middleware, and render deployment.
