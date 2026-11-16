@@ -1,11 +1,30 @@
 import 'leaflet/dist/leaflet.css'
 import { DomEvent } from 'leaflet'
-import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from 'react-leaflet'
+import { useEffect, useRef } from 'react'
+import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import { DEFAULT_ZOOM, USF_CENTER } from '../config'
+
+const FOCUS_ZOOM = 17
 
 /** Clicking empty map clears the route filter. */
 function BackgroundClick({ onClick }) {
   useMapEvents({ click: onClick })
+  return null
+}
+
+/** Centers the map on a focused stop; returns to the normal view when focus is cleared. */
+function FocusController({ focusedStop }) {
+  const map = useMap()
+  const wasFocused = useRef(false)
+  useEffect(() => {
+    if (focusedStop) {
+      map.flyTo([focusedStop.lat, focusedStop.lng], Math.max(map.getZoom(), FOCUS_ZOOM), { duration: 0.6 })
+      wasFocused.current = true
+    } else if (wasFocused.current) {
+      map.flyTo(USF_CENTER, DEFAULT_ZOOM, { duration: 0.6 })
+      wasFocused.current = false
+    }
+  }, [map, focusedStop])
   return null
 }
 
@@ -24,8 +43,9 @@ function formatLoad(load) {
  *   buses         [{ id, lat, lng, route, color, load }]
  *   selectedRoute route name to highlight, or null for all
  *   onSelectRoute called with a route name (or null) when the user clicks a line / the map
+ *   focusedStop   { id, name, lat, lng } chosen via "View on Map", or null
  */
-export default function BusMap({ routes, stops, buses, selectedRoute = null, onSelectRoute = () => {} }) {
+export default function BusMap({ routes, stops, buses, selectedRoute = null, onSelectRoute = () => {}, focusedStop = null }) {
   const isDimmed = (routeName) => selectedRoute !== null && routeName !== selectedRoute
 
   return (
@@ -37,6 +57,7 @@ export default function BusMap({ routes, stops, buses, selectedRoute = null, onS
       />
 
       <BackgroundClick onClick={() => onSelectRoute(null)} />
+      <FocusController focusedStop={focusedStop} />
 
       {/* Route lines */}
       {routes.map((route) => (
@@ -72,6 +93,22 @@ export default function BusMap({ routes, stops, buses, selectedRoute = null, onS
           </Tooltip>
         </CircleMarker>
       ))}
+
+      {/* Stop chosen via "View on Map" */}
+      {focusedStop && (
+        <CircleMarker
+          key={`focus-${focusedStop.id}`}
+          center={[focusedStop.lat, focusedStop.lng]}
+          radius={12}
+          pathOptions={{ color: '#b45309', weight: 4, fillColor: '#fbbf24', fillOpacity: 0.9 }}
+        >
+          <Tooltip direction="top" offset={[0, -12]} permanent>
+            <strong>{focusedStop.name}</strong>
+            <br />
+            Stop ID: {focusedStop.id}
+          </Tooltip>
+        </CircleMarker>
+      )}
 
       {/* Buses (drawn last so they sit on top) */}
       {buses

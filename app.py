@@ -20,7 +20,7 @@ def buses():
     except Exception:
         logger.exception("Failed to fetch live buses from PassioGo")
         return jsonify({"error": "Failed to fetch live buses"}), 502
-    # Optional enrichment: never raises; on failure nextStop/currentStop/heading stay null.
+    # Optional enrichment: never raises; on failure nextStop/currentStop/direction stay null.
     return jsonify(add_next_stops(live_buses))
 
 @app.route("/alerts")

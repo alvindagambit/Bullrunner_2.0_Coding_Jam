@@ -1,4 +1,4 @@
-"""Live next-stop and heading for each bus in /buses.
+"""Live next stop and route direction for each bus in /buses.
 
 Sources (all official USF / Passio data):
   - GTFS-Realtime vehiclePositions: per vehicle, the trip, the reported stop ID
@@ -30,7 +30,7 @@ official Passio GO tracker). If the feed ever reports STOPPED_AT, the bus is
 *at* that stop: it becomes currentStop, and nextStop is the following stop
 in the verified official order (or null if the order is unverified).
 
-heading is set only when the stop order is verified (check 7). It names the
+direction is set only when the stop order is verified (check 7). It names the
 trip's final stop, which for USF's loops is the loop's start/end stop.
 """
 import csv
@@ -149,7 +149,7 @@ def _following_sequence(by_seq, seq):
 
 
 def _evaluate(bus, matches, static, now):
-    """Return (nextStop, currentStop, heading, reason) for one bus."""
+    """Return (nextStop, currentStop, direction, reason) for one bus."""
     if bus.get("outdatedGps") is True:
         return None, None, None, "passio gps outdated"
     if len(matches) != 1:
@@ -198,28 +198,30 @@ def _evaluate(bus, matches, static, now):
     else:
         current_stop, next_stop, next_seq = None, dict(stop), seq
 
-    heading = None
+    direction = None
     if sequence_verified and next_seq is not None:
         ordered = sorted(pattern["stops"])
         end_id = pattern["stops"][ordered[-1]]
-        heading = {
+        direction = {
             "towardStopId": end_id,
             "toward": static["stops"][end_id]["name"],
             "loop": pattern["stops"][ordered[0]] == end_id,
             "stopSequence": next_seq,
             "stopsInTrip": len(ordered),
         }
-    return next_stop, current_stop, heading, "ok"
+    return next_stop, current_stop, direction, "ok"
 
 
 def add_next_stops(buses, now=None):
-    """Add nextStop, currentStop and heading to each bus, in place.
+    """Add nextStop, currentStop and direction to each bus, in place.
+
+    The existing "heading" field (compass degrees from Passio) is never touched.
 
     Never raises: on any failure every bus keeps null values and /buses is
     unaffected.
     """
     for bus in buses:
-        bus["nextStop"] = bus["currentStop"] = bus["heading"] = None
+        bus["nextStop"] = bus["currentStop"] = bus["direction"] = None
     if not buses:
         return buses
     try:
@@ -235,12 +237,12 @@ def add_next_stops(buses, now=None):
     now = int(time.time()) if now is None else now
     for bus in buses:
         try:
-            next_stop, current_stop, heading, reason = _evaluate(
+            next_stop, current_stop, direction, reason = _evaluate(
                 bus, vehicles.get(str(bus.get("id")), []), static, now)
         except Exception:
             logger.exception("Next-stop evaluation failed for bus %s", bus.get("id"))
             continue
-        bus["nextStop"], bus["currentStop"], bus["heading"] = next_stop, current_stop, heading
+        bus["nextStop"], bus["currentStop"], bus["direction"] = next_stop, current_stop, direction
         if reason != "ok":
             logger.info("Bus %s next stop unavailable: %s", bus.get("id"), reason)
     return buses

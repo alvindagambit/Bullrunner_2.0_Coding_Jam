@@ -1,4 +1,4 @@
-"""Tests for live next-stop and heading enrichment of /buses.
+"""Tests for live next-stop and direction enrichment of /buses.
 
 Uses the real repository data (frontend/public/stops.json and the official
 gtfs/*.txt trip sequences) and constructed GTFS-Realtime feeds. No network.
@@ -111,7 +111,7 @@ class NextStopTestBase(unittest.TestCase):
     def assertUnavailable(self, bus):
         self.assertIsNone(bus["nextStop"])
         self.assertIsNone(bus["currentStop"])
-        self.assertIsNone(bus["heading"])
+        self.assertIsNone(bus["direction"])
 
 
 class TestDatasetConsistency(unittest.TestCase):
@@ -156,7 +156,7 @@ class TestApproachingStop(NextStopTestBase):
         self.assertEqual(bus["nextStop"], {"id": "70726", "name": "Post Office",
                                            "lat": stop("70726")["lat"], "lng": stop("70726")["lng"]})
         self.assertIsNone(bus["currentStop"])
-        self.assertEqual(bus["heading"], {"towardStopId": "70748", "toward": "Marshall Student Center",
+        self.assertEqual(bus["direction"], {"towardStopId": "70748", "toward": "Marshall Student Center",
                                           "loop": True, "stopSequence": 2, "stopsInTrip": 35})
 
     def test_unreported_status_is_treated_as_in_transit_to(self):
@@ -175,7 +175,7 @@ class TestApproachingStop(NextStopTestBase):
         self.run_feed(buses, make_vehicle(seq=4), make_vehicle("21338", seq=20, label="2620"))
         self.assertEqual(buses[0]["nextStop"]["id"], red_stop_id(4))
         self.assertEqual(buses[1]["nextStop"]["id"], red_stop_id(20))
-        self.assertEqual((buses[0]["heading"]["stopSequence"], buses[1]["heading"]["stopSequence"]), (4, 20))
+        self.assertEqual((buses[0]["direction"]["stopSequence"], buses[1]["direction"]["stopSequence"]), (4, 20))
 
     def test_bus_advances_to_following_stop(self):
         bus = bus_at(red_stop_id(6))
@@ -184,14 +184,14 @@ class TestApproachingStop(NextStopTestBase):
         bus.update(lat=stop(red_stop_id(7))["lat"], lng=stop(red_stop_id(7))["lng"])  # Passio moves too
         self.run_feed([bus], make_vehicle(seq=7))
         self.assertEqual(bus["nextStop"]["id"], red_stop_id(7))
-        self.assertEqual(bus["heading"]["stopSequence"], 7)
+        self.assertEqual(bus["direction"]["stopSequence"], 7)
 
     def test_loop_wraps_from_final_stop_to_second_stop(self):
         bus = bus_at("70748")
         self.run_feed([bus], make_vehicle(seq=35))
-        self.assertEqual((bus["nextStop"]["name"], bus["heading"]["stopSequence"]), ("Marshall Student Center", 35))
+        self.assertEqual((bus["nextStop"]["name"], bus["direction"]["stopSequence"]), ("Marshall Student Center", 35))
         self.run_feed([bus], make_vehicle(seq=2))
-        self.assertEqual((bus["nextStop"]["name"], bus["heading"]["stopSequence"]), ("Post Office", 2))
+        self.assertEqual((bus["nextStop"]["name"], bus["direction"]["stopSequence"]), ("Post Office", 2))
 
 
 class TestStoppedAtStop(NextStopTestBase):
@@ -199,19 +199,19 @@ class TestStoppedAtStop(NextStopTestBase):
         [bus] = self.run_feed([bus_at("70726")], make_vehicle(seq=2, status=Status.STOPPED_AT))
         self.assertEqual(bus["currentStop"]["name"], "Post Office")
         self.assertEqual(bus["nextStop"]["id"], red_stop_id(3))
-        self.assertEqual(bus["heading"]["stopSequence"], 3)
+        self.assertEqual(bus["direction"]["stopSequence"], 3)
 
     def test_stopped_at_final_loop_stop_continues_with_second_stop(self):
         [bus] = self.run_feed([bus_at("70748")], make_vehicle(seq=35, status=Status.STOPPED_AT))
         self.assertEqual(bus["currentStop"]["name"], "Marshall Student Center")
         self.assertEqual(bus["nextStop"]["name"], "Post Office")
-        self.assertEqual(bus["heading"]["stopSequence"], 2)
+        self.assertEqual(bus["direction"]["stopSequence"], 2)
 
     def test_stopped_at_without_verified_sequence_has_no_next_stop(self):
         [bus] = self.run_feed([bus_at("70726")], make_vehicle(seq=None, stop_id="70726", status=Status.STOPPED_AT))
         self.assertEqual(bus["currentStop"]["name"], "Post Office")
         self.assertIsNone(bus["nextStop"])
-        self.assertIsNone(bus["heading"])
+        self.assertIsNone(bus["direction"])
 
 
 class TestUnavailable(NextStopTestBase):
@@ -267,7 +267,7 @@ class TestUnavailable(NextStopTestBase):
         bus_blue = bus_at(blue_stop, route="Blue")
         self.run_feed([bus_blue], make_vehicle(seq=3, trip_id=BLUE_TRIP, route_id=BLUE_ROUTE_ID, stop_id=blue_stop))
         self.assertEqual(bus_blue["nextStop"]["id"], blue_stop)
-        self.assertEqual(bus_blue["heading"]["stopsInTrip"], len(static()["trips"][BLUE_TRIP]["stops"]))
+        self.assertEqual(bus_blue["direction"]["stopsInTrip"], len(static()["trips"][BLUE_TRIP]["stops"]))
 
     def test_stop_missing_from_database_is_not_guessed(self):
         s = stop(red_stop_id(5))
@@ -286,15 +286,15 @@ class TestUnavailable(NextStopTestBase):
 
 
 class TestIncompleteGtfs(NextStopTestBase):
-    def test_unknown_trip_shows_live_stop_without_heading(self):
+    def test_unknown_trip_shows_live_stop_without_direction(self):
         [bus] = self.run_feed([bus_at("70726")], make_vehicle(seq=2, stop_id="70726", trip_id="999999"))
         self.assertEqual(bus["nextStop"]["name"], "Post Office")
-        self.assertIsNone(bus["heading"])
+        self.assertIsNone(bus["direction"])
 
-    def test_missing_stop_sequence_shows_live_stop_without_heading(self):
+    def test_missing_stop_sequence_shows_live_stop_without_direction(self):
         [bus] = self.run_feed([bus_at("70726")], make_vehicle(seq=None, stop_id="70726"))
         self.assertEqual(bus["nextStop"]["name"], "Post Office")
-        self.assertIsNone(bus["heading"])
+        self.assertIsNone(bus["direction"])
 
 
 class TestFailuresNeverBreakBuses(NextStopTestBase):
@@ -364,11 +364,11 @@ class TestBusesEndpoint(NextStopTestBase):
         self.assertEqual(status, 200)
         by_id = {b["id"]: b for b in body}
         self.assertEqual(by_id[9796]["nextStop"]["name"], "Post Office")
-        self.assertEqual(by_id[9796]["heading"]["toward"], "Marshall Student Center")
+        self.assertEqual(by_id[9796]["direction"]["toward"], "Marshall Student Center")
         self.assertIsNone(by_id[21338]["nextStop"])  # Passio marks its GPS outdated
         self.assertTrue(by_id[21338]["outdatedGps"])
         for bus in body:
-            for key in ("id", "lat", "lng", "route", "color", "load", "outdatedGps", "nextStop", "currentStop", "heading"):
+            for key in ("id", "lat", "lng", "route", "color", "load", "outdatedGps", "nextStop", "currentStop", "direction"):
                 self.assertIn(key, bus)
 
     def test_feed_down_keeps_live_buses(self):
@@ -376,8 +376,29 @@ class TestBusesEndpoint(NextStopTestBase):
         status, body = self.get_json()
         self.assertEqual(status, 200)
         self.assertEqual(len(body), 2)
-        self.assertTrue(all(b["nextStop"] is None and b["heading"] is None for b in body))
+        self.assertTrue(all(b["nextStop"] is None and b["direction"] is None for b in body))
         self.assertTrue(all(isinstance(b["lat"], float) for b in body))
+
+    def test_regression_compass_heading_is_preserved(self):
+        """/buses already has `heading` (compass degrees from Passio); enrichment must not overwrite it."""
+        expected = float(make_bus()["calculatedCourse"])
+        for label, setup in (("feed ok", lambda: setattr(self.get, "return_value", feed_response(make_feed(make_vehicle(seq=2))))),
+                             ("feed down", lambda: setattr(self.get, "side_effect", requests.ConnectionError("down")))):
+            with self.subTest(label):
+                setup()
+                _, body = self.get_json()
+                for bus in body:
+                    self.assertEqual(bus["heading"], expected)
+                    self.assertIn("direction", bus)
+
+
+class TestEnrichmentLeavesExistingFields(NextStopTestBase):
+    def test_only_new_keys_are_added(self):
+        original = bus_at("70726", heading=123.4, load=50.0, color="#eb1b00", name="1124")
+        before = dict(original)
+        self.run_feed([original], make_vehicle(seq=2))
+        self.assertEqual({k: original[k] for k in before}, before)
+        self.assertEqual(set(original) - set(before), {"nextStop", "currentStop", "direction"})
 
 
 if __name__ == "__main__":
