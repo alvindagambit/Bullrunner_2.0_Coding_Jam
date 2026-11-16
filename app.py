@@ -4,6 +4,7 @@ from flask import Flask, jsonify
 
 from passio_client import get_usf_buses
 from gtfs_alerts import get_usf_alerts
+from next_stop import add_next_stops
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -15,10 +16,12 @@ def home():
 @app.route("/buses")
 def buses():
     try:
-        return jsonify(get_usf_buses())
+        live_buses = get_usf_buses()
     except Exception:
         logger.exception("Failed to fetch live buses from PassioGo")
         return jsonify({"error": "Failed to fetch live buses"}), 502
+    # Optional enrichment: never raises; on failure nextStop/currentStop/heading stay null.
+    return jsonify(add_next_stops(live_buses))
 
 @app.route("/alerts")
 def alerts():
