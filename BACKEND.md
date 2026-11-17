@@ -107,6 +107,44 @@ The current frontend does not use these.
 | `updated` | string or null | Last report time as given by PassioGo, for example `"03:26 PM"` (local time, no date) |
 | `latitude` / `longitude` | number | Same values as `lat` / `lng`, kept for compatibility |
 
+### Next stop and direction (optional, may be `null`)
+
+Every bus also has `nextStop`, `currentStop` and `direction`. They are `null`
+whenever the information can't be established reliably. Nothing is guessed from
+proximity, and no arrival times are given.
+
+| Field | Type | Description |
+|---|---|---|
+| `nextStop` | object or null | `{ "id", "name", "lat", "lng" }`: the stop the bus is approaching, from the official GTFS-Realtime `vehiclePositions` feed. Name and coordinates come from `frontend/public/stops.json`. |
+| `currentStop` | object or null | Same shape. Set only when the feed explicitly reports `STOPPED_AT` (USF's feed currently never does). `nextStop` is then the following stop in the official order. |
+| `direction` | object or null | `{ "toward", "towardStopId", "loop", "stopPosition", "stopsInTrip", "stopSequence" }`. `toward` is the trip's final stop. Every USF trip is a loop, so this is its start and end stop (Marshall Student Center, or Library for Brown). `stopPosition` is the 1-based position of `nextStop` among the trip's ordered `stop_times.txt` records, always between 1 and `stopsInTrip`. `stopSequence` is the raw GTFS `stop_sequence`, which may skip values or not start at 1. A stop visited twice (such as a loop's start and end) is told apart by its sequence value. The frontend shows "Route progress: Stop `stopPosition` of `stopsInTrip`" and names `toward` only when `loop` is `false`. |
+
+`nextStop` requires **all** of these, checked on every request (no per-bus state is kept, so route changes are handled):
+1. `outdatedGps` is not `true`.
+2. Exactly one feed vehicle has this bus's exact ID.
+3. The feed position is at most 120 s old.
+4. The feed position is within 300 m of Passio's.
+5. The feed trip's `route_id` belongs to the bus's current route.
+6. The stop ID exists in `stops.json`.
+7. If the trip is in `gtfs/stop_times.txt`, the stop at `current_stop_sequence` must equal the reported stop; a mismatch gives `null`.
+
+`direction` additionally requires check 7 to have passed. If the feed omits
+`current_status` (USF's always does), GTFS-Realtime defines `IN_TRANSIT_TO`, so
+the reported stop is the upcoming one. This was confirmed against the official
+Passio GO tracker. If the `vehiclePositions` feed fails, these three fields are
+`null` and the rest of `/buses` is unaffected.
+
+**Brown route:** Brown passes the same checks as every route and is not
+special-cased. However, Passio GO publishes no Brown arrival times, so Brown
+next stops have not been independently cross-checked against the official
+tracker (verified 2026-11-15 and 2026-11-16).
+
+`gtfs/stop_times.txt` is an unmodified copy of the official file from
+`https://passio3.com/usf/passioTransit/gtfs/google_transit.zip` (feed valid
+2026-11-15 to 2026-12-16). Refresh it with the other `gtfs/*.txt` files when
+USF publishes a new feed. Check 7 then rejects stale patterns rather than
+showing wrong stops.
+
 ### Guarantees
 
 - Out-of-service buses are excluded.
@@ -147,6 +185,8 @@ merging this PR.
 | `app.py` | Flask routes: `/`, `/buses`, `/alerts` |
 | `gtfs_alerts.py` | Parses official GTFS-Realtime service alerts |
 | `tests/test_alerts.py` | Offline alert tests |
+| `next_stop.py` | Adds `nextStop` / `currentStop` / `direction` from GTFS-Realtime vehiclePositions and `gtfs/stop_times.txt` |
+| `tests/test_next_stop.py` | Offline next-stop tests, including dataset consistency checks |
 | `passio_client.py` | Fetches and validates live bus data from PassioGo |
 | `tests/test_buses.py` | Automated tests for `/buses` |
 | `requirements.txt` | Pinned backend dependencies |

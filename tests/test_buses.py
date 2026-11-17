@@ -64,6 +64,14 @@ class BusesEndpointTestBase(unittest.TestCase):
         log_patcher = mock.patch("app.logger")
         self.mock_logger = log_patcher.start()
         self.addCleanup(log_patcher.stop)
+        # Keep these tests offline: the optional next-stop feed is "down", so
+        # nextStop/currentStop/direction are null (covered in test_next_stop.py).
+        feed_patcher = mock.patch("next_stop.requests.get", side_effect=requests.ConnectionError("offline"))
+        feed_patcher.start()
+        self.addCleanup(feed_patcher.stop)
+        quiet = mock.patch("next_stop.logger")  # the expected "feed unavailable" warning
+        quiet.start()
+        self.addCleanup(quiet.stop)
 
     def get_buses(self, data=None, status=200):
         if data is not None:

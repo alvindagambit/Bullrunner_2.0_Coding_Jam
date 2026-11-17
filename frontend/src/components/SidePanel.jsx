@@ -1,6 +1,58 @@
 import { useEffect, useState } from 'react'
 
 /**
+ * One active bus inside a route card: its verified next stop and route progress.
+ * nextStop / currentStop / direction come from /buses and are null whenever the
+ * backend could not establish them reliably; nothing is guessed here.
+ */
+function BusNextStop({ bus, isFocused, onViewStop }) {
+  const { nextStop, currentStop, direction } = bus
+  const mapStop = nextStop ?? currentStop
+  return (
+    <li className={`rounded-lg px-2 py-1.5 ${isFocused ? 'bg-amber-50 ring-1 ring-amber-300' : 'bg-slate-50'}`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Bus {bus.id}</span>
+        {bus.outdatedGps === true && <span className="text-[10px] font-semibold text-amber-700">GPS stale</span>}
+      </div>
+      {currentStop && (
+        <div className="text-xs text-slate-700">
+          Now at: <span className="font-semibold">{currentStop.name}</span>
+        </div>
+      )}
+      {nextStop ? (
+        <>
+          <div className="text-sm leading-snug font-bold text-slate-900">Next stop: {nextStop.name}</div>
+          <div className="text-[11px] text-slate-500">Stop ID: {nextStop.id}</div>
+        </>
+      ) : (
+        <div className="text-sm font-semibold text-slate-500">Next stop unavailable</div>
+      )}
+      {/* USF routes are loops, so the trip's end stop is not a useful destination.
+          Show progress through the official stop order instead; name a destination
+          only for a one-way trip (none exist in USF's current GTFS). */}
+      <div className="text-[11px] text-slate-600">
+        {direction
+          ? `Route progress: Stop ${direction.stopPosition} of ${direction.stopsInTrip}`
+          : 'Route progress unavailable'}
+      </div>
+      {direction && direction.loop === false && (
+        <div className="text-[11px] text-slate-600">Heading toward {direction.toward}</div>
+      )}
+      {mapStop && (
+        <button
+          type="button"
+          onClick={() => onViewStop(mapStop)}
+          className="mt-0.5 cursor-pointer text-[11px] font-semibold text-[#006747] hover:underline"
+          aria-label={`View ${mapStop.name} on map`}
+        >
+          View on Map
+        </button>
+      )}
+    </li>
+  )
+}
+
+/**
  * Control-room side panel for Bull Runner Live.
  *
  * Props (formats: BACKEND.md for buses, frontend/README.md for routes/stops):
@@ -10,6 +62,8 @@ import { useEffect, useState } from 'react'
  *   onSelectRoute callback(routeName | null) to filter the map
  *   lastUpdated   epoch ms timestamp from useBuses
  *   alerts        [{ id, name }]
+ *   focusedStopId stop ID currently highlighted on the map, or null
+ *   onViewStop    callback({ id, name, lat, lng }) for a bus's "View on Map"
  */
 export default function SidePanel({
   buses = [],
@@ -22,6 +76,8 @@ export default function SidePanel({
   alertsUpdated = null,
   dataError = null,
   isMock = false,
+  focusedStopId = null,
+  onViewStop = () => {},
 }) {
   const [secondsAgo, setSecondsAgo] = useState(0)
 
@@ -165,46 +221,68 @@ export default function SidePanel({
           const busCount = busCountByRoute[route.name] || 0
           const hasBuses = busCount > 0
           const staleOnRoute = buses.filter((bus) => bus.route === route.name && bus.outdatedGps === true).length
+          const routeBuses = buses
+            .filter((bus) => bus.route === route.name)
+            .sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }))
 
           return (
-            <button
-              type="button"
+            <div
               key={route.id ?? route.name}
-              onClick={() => onSelectRoute(isSelected ? null : route.name)}
-              className={`flex w-full cursor-pointer items-center justify-between rounded-xl border p-3 text-left transition-all ${
+              className={`overflow-hidden rounded-xl border transition-all ${
                 isSelected
                   ? 'border-[#006747] bg-[#006747]/10 shadow-sm ring-1 ring-[#006747]'
-                  : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span
-                  className="h-4 w-4 shrink-0 rounded-full border border-black/10 shadow-sm"
-                  style={{ backgroundColor: route.color || '#006747' }}
-                />
-                <div>
-                  <div className="text-sm leading-tight font-semibold text-slate-900">
-                    {route.name}
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    {hasBuses ? `${busCount} bus${busCount > 1 ? 'es' : ''} running` : 'No active buses'}
-                  </div>
-                  {staleOnRoute > 0 && (
-                    <div className="text-[11px] font-semibold text-amber-700">
-                      {staleOnRoute} GPS stale
+              <button
+                type="button"
+                onClick={() => onSelectRoute(isSelected ? null : route.name)}
+                className={`flex w-full cursor-pointer items-center justify-between p-3 text-left ${
+                  isSelected ? '' : 'hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className="h-4 w-4 shrink-0 rounded-full border border-black/10 shadow-sm"
+                    style={{ backgroundColor: route.color || '#006747' }}
+                  />
+                  <div>
+                    <div className="text-sm leading-tight font-semibold text-slate-900">
+                      {route.name}
                     </div>
-                  )}
+                    <div className="text-[11px] text-slate-500">
+                      {hasBuses ? `${busCount} bus${busCount > 1 ? 'es' : ''} running` : 'No active buses'}
+                    </div>
+                    {staleOnRoute > 0 && (
+                      <div className="text-[11px] font-semibold text-amber-700">
+                        {staleOnRoute} GPS stale
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {hasBuses ? (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-                  {busCount} active
-                </span>
-              ) : (
-                <span className="text-xs text-slate-400">Idle</span>
+                {hasBuses ? (
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                    {busCount} active
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-400">Idle</span>
+                )}
+              </button>
+
+              {routeBuses.length > 0 && (
+                <ul className="flex flex-col gap-2 border-t border-slate-200/80 px-3 pt-2 pb-3">
+                  {routeBuses.map((bus) => (
+                    <BusNextStop
+                      key={bus.id}
+                      bus={bus}
+                      isFocused={focusedStopId != null && [bus.nextStop?.id, bus.currentStop?.id].includes(focusedStopId)}
+                      onViewStop={onViewStop}
+                    />
+                  ))}
+                </ul>
               )}
-            </button>
+            </div>
           )
         })}
       </div>
