@@ -2,22 +2,38 @@
 
 From the repository root after activating the venv:
     pip install -r requirements.txt   # includes gtfs-realtime-bindings and protobuf
-    python scripts/verify_live_transit.py
+    python scripts/verify_live_transit.py                    # comparison + diagnostics
+    python scripts/verify_live_transit.py --diagnose-only    # only why buses lack a next stop
+    python scripts/verify_live_transit.py --diagnose-only --samples 24 --interval 10   # ~4 min
 
 Checks production bus locations against USF's independently published
 GTFS-Realtime vehiclePositions feed. Reports candidate next-stop IDs but
 NEVER treats nearest-stop geometry as a verified next stop.
-No files, deployments or application state are modified.
+
+Diagnostics explain why production returned nextStop/currentStop = null for a
+bus. They re-run the backend's own validation (next_stop._evaluate); nothing
+is re-implemented. Production is bracketed by two feed snapshots (before and
+after), and a reason is reported as CONFIRMED only when both snapshots reject
+the bus for the same reason, or when production's own data shows it
+(outdatedGps). Anything else is NOT CAPTURED: the evidence needed to know why
+production rejected the bus was not available to this script.
+
+Only GET requests are made. No files, deployments or application state are modified.
 """
+import argparse
 import json
 import math
 from pathlib import Path
+import sys
 import time
 
 from google.transit import gtfs_realtime_pb2
 import requests
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+import next_stop  # noqa: E402  (backend validation, reused rather than duplicated)
+
 BUS_URL = "https://bullrunner-2-0-coding-jam.vercel.app/api/buses"
 GTFS_URL = "https://passio3.com/usf/passioTransit/gtfs/realtime/vehiclePositions"
 STOPS_PATH = ROOT / "frontend" / "public" / "stops.json"
@@ -143,7 +159,144 @@ def inspect_snapshot(buses, vehicles, stops, routes):
     return {str(b["id"]): b for b in buses if b.get("id") is not None}
 
 
-def main():
+# --- Next-stop validation diagnostics ---------------------------------------
+
+CONFIRMED = "CONFIRMED"
+NOT_CAPTURED = "NOT CAPTURED"
+
+
+def fetch_production_buses():
+    response = requests.get(BUS_URL, timeout=TIMEOUT)
+    response.raise_for_status()
+    buses = response.json()
+    if not isinstance(buses, list):
+        raise ValueError("Production /api/buses returned a non-array")
+    return buses
+
+
+def _try_feed():
+    """One vehiclePositions snapshot via the backend's fetcher, or None if unavailable."""
+    try:
+        return next_stop.fetch_vehicle_positions(), int(time.time())
+    except next_stop.FeedError:
+        return None, int(time.time())
+
+
+def capture():
+    """Feed snapshot, then production /buses, then a second feed snapshot (all GET)."""
+    before, t_before = _try_feed()
+    buses = fetch_production_buses()
+    after, t_after = _try_feed()
+    return buses, (before, t_before), (after, t_after)
+
+
+def _evidence(bus, vehicles, static, now):
+    """Feed facts relevant to the rejection, for one snapshot."""
+    if vehicles is None:
+        return {"feed": "unavailable"}
+    found = vehicles.get(str(bus.get("id")), [])
+    evidence = {"feed_vehicles_with_id": len(found)}
+    if len(found) != 1:
+        return evidence
+    v = found[0]
+    trip_id = v.trip.trip_id if v.HasField("trip") and v.trip.HasField("trip_id") else None
+    seq = v.current_stop_sequence if v.HasField("current_stop_sequence") else None
+    pattern = static["trips"].get(trip_id) if trip_id else None
+    evidence.update({
+        "trip_id": trip_id,
+        "feed_route_id": v.trip.route_id if v.HasField("trip") and v.trip.HasField("route_id") else None,
+        "bus_route_ids": sorted(static["route_ids_by_name"].get(bus.get("route"), set())),
+        "stop_sequence": seq,
+        "stop_id": v.stop_id if v.HasField("stop_id") else None,
+        "official_stop_at_sequence": pattern["stops"].get(seq) if pattern and seq is not None else None,
+        "position_age_s": now - int(v.timestamp) if v.HasField("timestamp") else None,
+    })
+    try:
+        evidence["gps_delta_m"] = round(next_stop.haversine_meters(
+            float(bus["lat"]), float(bus["lng"]), v.position.latitude, v.position.longitude))
+    except (KeyError, TypeError, ValueError):
+        evidence["gps_delta_m"] = None
+    return evidence
+
+
+def diagnose(buses, before, after, static):
+    """Explain each production bus with nextStop and currentStop both null.
+
+    before/after are (vehicles_or_None, unix_time) feed snapshots taken just
+    before and just after production was read. Returns one record per bus.
+    """
+    records = []
+    for bus in buses:
+        if bus.get("nextStop") or bus.get("currentStop"):
+            continue
+        record = {"bus_id": bus.get("id"), "route": bus.get("route")}
+        if bus.get("outdatedGps") is True:
+            record.update(status=CONFIRMED, category="passio gps outdated",
+                          detail="production reports outdatedGps=true", evidence={})
+            records.append(record)
+            continue
+        if before[0] is None or after[0] is None:
+            record.update(status=NOT_CAPTURED, category="feed snapshot unavailable",
+                          detail="could not read vehiclePositions on both sides of the production request",
+                          evidence={"before": _evidence(bus, before[0], static, before[1]),
+                                    "after": _evidence(bus, after[0], static, after[1])})
+            records.append(record)
+            continue
+        results = []
+        for vehicles, now in (before, after):
+            reason = next_stop._evaluate(dict(bus), vehicles.get(str(bus.get("id")), []), static, now)[3]
+            results.append(reason)
+        evidence = {"before": _evidence(bus, before[0], static, before[1]),
+                    "after": _evidence(bus, after[0], static, after[1])}
+        categories = [None if r == "ok" else next_stop._reason_category(r) for r in results]
+        if categories[0] and categories[0] == categories[1]:
+            record.update(status=CONFIRMED, category=categories[0], detail=results[1], evidence=evidence)
+        elif categories == [None, None]:
+            record.update(status=NOT_CAPTURED, category="not reproduced",
+                          detail="both feed snapshots validate this bus; production's rejection was not reproduced",
+                          evidence=evidence)
+        else:
+            record.update(status=NOT_CAPTURED, category="feed changed during capture",
+                          detail=f"before: {results[0]!r}; after: {results[1]!r}", evidence=evidence)
+        records.append(record)
+    return records
+
+
+def print_diagnostics(buses, records):
+    eligible = [b for b in buses if b.get("outdatedGps") is not True]
+    resolved = sum(1 for b in buses if b.get("nextStop") or b.get("currentStop"))
+    print(f"Next-stop diagnostics: {resolved}/{len(buses)} buses resolved "
+          f"({len(eligible)} eligible); {len(records)} without a next stop")
+    for r in records:
+        print(f"  Bus {r['bus_id']} ({r['route']}): {r['status']}: {r['category']} | {r['detail']}")
+        for side in ("before", "after"):
+            if side in r["evidence"]:
+                print(f"      {side}: {json.dumps(r['evidence'][side], sort_keys=True)}")
+    if eligible and not any(b.get("nextStop") or b.get("currentStop") for b in eligible):
+        print("  WARNING: no eligible bus resolved. This looks systematic; check the Vercel logs for [stage=...].")
+
+
+def run_diagnostics(samples=1, interval=10):
+    static = next_stop.load_static()
+    for i in range(samples):
+        buses, before, after = capture()
+        print(f"\n[{time.strftime('%H:%M:%S')}] sample {i + 1}/{samples}")
+        print_diagnostics(buses, diagnose(buses, before, after, static))
+        if i + 1 < samples:
+            time.sleep(interval)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--diagnose-only", action="store_true",
+                        help="only explain buses that production returned without a next stop")
+    parser.add_argument("--samples", type=int, default=1, help="diagnostic samples to take (default 1)")
+    parser.add_argument("--interval", type=float, default=10, help="seconds between samples (default 10)")
+    args = parser.parse_args(argv)
+    if args.diagnose_only:
+        run_diagnostics(args.samples, args.interval)
+        return
+
     stops = {str(s["id"]): s for s in json.loads(STOPS_PATH.read_text())}
     routes = {r["name"]: str(r["id"]) for r in json.loads(ROUTES_PATH.read_text())}
     print("Reading production and official GTFS-RT (no simulated data)...")
@@ -162,6 +315,7 @@ def main():
             moved.append((bus_id, round(distance, 1)))
     print(f"Same vehicle IDs across samples: {len(common)}; moved >3m: {moved}")
     print("A nonmoving bus is not automatically a failure. Compare several polls and the official Passio GO map.")
+    run_diagnostics(args.samples, args.interval)
 
 
 if __name__ == "__main__":
