@@ -115,7 +115,7 @@ proximity, and no arrival times are given.
 
 | Field | Type | Description |
 |---|---|---|
-| `nextStop` | object or null | `{ "id", "name", "lat", "lng" }`: the stop the bus is approaching, from the official GTFS-Realtime `vehiclePositions` feed. Name and coordinates come from `frontend/public/stops.json`. |
+| `nextStop` | object or null | `{ "id", "name", "lat", "lng" }`: the stop the bus is approaching, from the official GTFS-Realtime `vehiclePositions` feed. Name and coordinates come from the official `gtfs/stops.txt`, with the `"NNNNN - "` stop-code prefix removed; this is identical to `frontend/public/stops.json`, and a test enforces it. |
 | `currentStop` | object or null | Same shape. Set only when the feed explicitly reports `STOPPED_AT` (USF's feed currently never does). `nextStop` is then the following stop in the official order. |
 | `direction` | object or null | `{ "toward", "towardStopId", "loop", "stopPosition", "stopsInTrip", "stopSequence" }`. `toward` is the trip's final stop. Every USF trip is a loop, so this is its start and end stop (Marshall Student Center, or Library for Brown). `stopPosition` is the 1-based position of `nextStop` among the trip's ordered `stop_times.txt` records, always between 1 and `stopsInTrip`. `stopSequence` is the raw GTFS `stop_sequence`, which may skip values or not start at 1. A stop visited twice (such as a loop's start and end) is told apart by its sequence value. The frontend shows "Route progress: Stop `stopPosition` of `stopsInTrip`" and names `toward` only when `loop` is `false`. |
 
@@ -125,7 +125,7 @@ proximity, and no arrival times are given.
 3. The feed position is at most 120 s old.
 4. The feed position is within 300 m of Passio's.
 5. The feed trip's `route_id` belongs to the bus's current route.
-6. The stop ID exists in `stops.json`.
+6. The stop ID exists in the official stop list (`gtfs/stops.txt`).
 7. If the trip is in `gtfs/stop_times.txt`, the stop at `current_stop_sequence` must equal the reported stop; a mismatch gives `null`.
 
 `direction` additionally requires check 7 to have passed. If the feed omits
@@ -133,6 +133,15 @@ proximity, and no arrival times are given.
 the reported stop is the upcoming one. This was confirmed against the official
 Passio GO tracker. If the `vehiclePositions` feed fails, these three fields are
 `null` and the rest of `/buses` is unaffected.
+
+**Deployment note:** the backend reads only `gtfs/*.txt` at runtime. Vercel's
+Python builder (`@vercel/python`) never bundles any `**/public/**` path into the
+function, so backend code must not depend on `frontend/public/`. An earlier
+version did, and production returned `nextStop: null` for every bus. A test now
+guards this. Next-stop diagnostics are written to the server logs (for example,
+Vercel runtime logs) as `[stage=static]`, `[stage=feed]` or `[stage=validate]`,
+plus one summary line per request with counts of unresolved reasons. Nothing
+is added to API responses.
 
 **Brown route:** Brown passes the same checks as every route and is not
 special-cased. However, Passio GO publishes no Brown arrival times, so Brown
