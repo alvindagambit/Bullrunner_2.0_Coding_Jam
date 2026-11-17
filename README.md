@@ -82,6 +82,8 @@ curl -s http://localhost:5173/api/buses    # through the Vite proxy
 
 # Read-only comparison of production next stops with the official GTFS-Realtime feed
 python scripts/verify_live_transit.py
+# Only explain buses that production returned without a next stop (e.g. ~4 minutes of samples)
+python scripts/verify_live_transit.py --diagnose-only --samples 24 --interval 10
 ```
 
 **Continuous integration:** `.github/workflows/ci.yml` runs on every pull request and every push to `main`:
