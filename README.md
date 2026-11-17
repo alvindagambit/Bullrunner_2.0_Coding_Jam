@@ -90,6 +90,22 @@ python scripts/verify_live_transit.py
 
 Use `npm ci` (not `npm install`) to reproduce the CI install. If you change frontend dependencies, commit the updated `package-lock.json`, or `npm ci` will fail.
 
+## Release process
+
+`main` is protected by a GitHub ruleset: every change needs a pull request, the three CI checks (`Backend tests (Python 3.15)`, `Frontend lint + build (Node 24)`, `Frontend lint + build (Node 26)`) must pass, and force-pushes and branch deletion are blocked. CI catches code errors. **It does not prove live transit accuracy or Vercel runtime behaviour**, so every release that touches `/buses`, `/alerts` or their data also gets these checks:
+
+1. **Before merging:** CI is green and both Vercel preview builds succeed. Previews are behind Vercel Authentication, so check the backend preview's `/buses` and `/alerts` while logged in to Vercel.
+2. **Before merging, record a rollback reference:** the current production commit and frontend bundle name.
+3. **After merging, during Bull Runner service hours,** check production `https://bullrunner-2-0-coding-jam-xzak.vercel.app/buses`:
+   - running buses have non-null `nextStop` and `direction`
+   - `stopPosition` is at most `stopsInTrip`
+   - `heading`, `lat`/`lng`, `route` and `load` look right
+   - `/alerts` returns 200
+   - the frontend shows no "Mock data" badge
+4. **Compare with the official sources:** run `python scripts/verify_live_transit.py`, and spot-check a few next stops against the Passio GO tracker. An empty response outside service hours is **not** a successful check.
+5. **Check the Vercel runtime logs:** they should show `Next-stop static GTFS loaded: … stops, … routes, … trip patterns` and no repeated `[stage=static]`, `[stage=feed]` or `[stage=validate]` warnings.
+6. **If something fails,** use Vercel → Deployments → previous Production deployment → **Instant Rollback**, or merge a `git revert -m 1 <merge commit>` pull request.
+
 ## Known limitations
 
 - **Stale GPS is flagged**: buses with `outdatedGps: true` are shown with muted dashed map markers and warnings in the route panel. Their positions may be outdated.
