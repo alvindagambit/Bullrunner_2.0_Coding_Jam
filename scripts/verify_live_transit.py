@@ -10,13 +10,19 @@ Checks production bus locations against USF's independently published
 GTFS-Realtime vehiclePositions feed. Reports candidate next-stop IDs but
 NEVER treats nearest-stop geometry as a verified next stop.
 
-Diagnostics explain why production returned nextStop/currentStop = null for a
-bus. They re-run the backend's own validation (next_stop._evaluate); nothing
-is re-implemented. Production is bracketed by two feed snapshots (before and
-after), and a reason is reported as CONFIRMED only when both snapshots reject
-the bus for the same reason, or when production's own data shows it
-(outdatedGps). Anything else is NOT CAPTURED: the evidence needed to know why
-production rejected the bus was not available to this script.
+Diagnostics explain every production bus with nextStop = null. They re-run the
+backend's own validation (next_stop._evaluate); nothing is re-implemented.
+Two conditions are distinguished, both read directly from production data:
+  - validation rejection: nextStop and currentStop are both null
+  - at stop, no next stop: currentStop is set (so every validation check
+    passed), but no following stop could be given. This is not a rejection.
+Production is bracketed by two feed snapshots (before and after). Evidence
+levels:
+  CONFIRMED     established by production's own data (outdatedGps, or
+                currentStop set without nextStop)
+  REPRODUCED    both feed snapshots show the same cause. This supports a likely
+                cause but cannot prove what production itself received.
+  NOT CAPTURED  the snapshots disagree, don't reproduce it, or weren't readable
 
 Only GET requests are made. No files, deployments or application state are modified.
 """
@@ -161,8 +167,12 @@ def inspect_snapshot(buses, vehicles, stops, routes):
 
 # --- Next-stop validation diagnostics ---------------------------------------
 
-CONFIRMED = "CONFIRMED"
-NOT_CAPTURED = "NOT CAPTURED"
+CONFIRMED = "CONFIRMED"        # established by production's own response
+REPRODUCED = "REPRODUCED"      # both feed snapshots agree; likely, not proven
+NOT_CAPTURED = "NOT CAPTURED"  # evidence unavailable or inconsistent
+
+REJECTION = "validation rejection"
+AT_STOP = "at stop, no next stop"
 
 
 def fetch_production_buses():
@@ -202,13 +212,20 @@ def _evidence(bus, vehicles, static, now):
     trip_id = v.trip.trip_id if v.HasField("trip") and v.trip.HasField("trip_id") else None
     seq = v.current_stop_sequence if v.HasField("current_stop_sequence") else None
     pattern = static["trips"].get(trip_id) if trip_id else None
+    ordered = sorted(pattern["stops"]) if pattern else []
+    is_loop = bool(ordered) and pattern["stops"][ordered[0]] == pattern["stops"][ordered[-1]]
     evidence.update({
         "trip_id": trip_id,
         "feed_route_id": v.trip.route_id if v.HasField("trip") and v.trip.HasField("route_id") else None,
         "bus_route_ids": sorted(static["route_ids_by_name"].get(bus.get("route"), set())),
+        "current_status": (next_stop.VehicleStatus.Name(v.current_status) if v.HasField("current_status")
+                           else "not reported (IN_TRANSIT_TO assumed)"),
         "stop_sequence": seq,
         "stop_id": v.stop_id if v.HasField("stop_id") else None,
         "official_stop_at_sequence": pattern["stops"].get(seq) if pattern and seq is not None else None,
+        "trip_is_loop": is_loop if pattern else None,
+        "at_final_stop": (seq == ordered[-1]) if ordered and seq is not None else None,
+        "at_loop_boundary": bool(is_loop and seq is not None and seq in (ordered[0], ordered[-1])),
         "position_age_s": now - int(v.timestamp) if v.HasField("timestamp") else None,
     })
     try:
@@ -219,56 +236,92 @@ def _evidence(bus, vehicles, static, now):
     return evidence
 
 
+def _at_stop_cause(result, evidence):
+    """Why a snapshot shows the bus stopped without a following stop, or None."""
+    next_stop_, current_stop, _direction, reason = result
+    if reason != "ok" or not current_stop or next_stop_:
+        return None
+    if evidence.get("official_stop_at_sequence") is None:
+        return "following stop not verifiable (official stop order unavailable for this trip/sequence)"
+    if evidence.get("at_final_stop") and not evidence.get("trip_is_loop"):
+        return "terminal stop: no following stop in the official order"
+    return "no following stop in the official order"
+
+
 def diagnose(buses, before, after, static):
-    """Explain each production bus with nextStop and currentStop both null.
+    """Explain each production bus whose nextStop is null.
 
     before/after are (vehicles_or_None, unix_time) feed snapshots taken just
     before and just after production was read. Returns one record per bus.
     """
     records = []
     for bus in buses:
-        if bus.get("nextStop") or bus.get("currentStop"):
+        if bus.get("nextStop"):
             continue
-        record = {"bus_id": bus.get("id"), "route": bus.get("route")}
-        if bus.get("outdatedGps") is True:
+        current = bus.get("currentStop")
+        record = {"bus_id": bus.get("id"), "route": bus.get("route"),
+                  "condition": AT_STOP if current else REJECTION}
+        if current:
+            # currentStop is only set after every validation check passes.
+            record["production_fact"] = (f"{CONFIRMED}: production reports currentStop "
+                                         f"{current.get('name')} ({current.get('id')}); validation passed, "
+                                         f"not a rejection")
+        elif bus.get("outdatedGps") is True:
             record.update(status=CONFIRMED, category="passio gps outdated",
                           detail="production reports outdatedGps=true", evidence={})
             records.append(record)
             continue
+        evidence = {"before": _evidence(bus, before[0], static, before[1]),
+                    "after": _evidence(bus, after[0], static, after[1])}
         if before[0] is None or after[0] is None:
             record.update(status=NOT_CAPTURED, category="feed snapshot unavailable",
                           detail="could not read vehiclePositions on both sides of the production request",
-                          evidence={"before": _evidence(bus, before[0], static, before[1]),
-                                    "after": _evidence(bus, after[0], static, after[1])})
+                          evidence=evidence)
             records.append(record)
             continue
-        results = []
-        for vehicles, now in (before, after):
-            reason = next_stop._evaluate(dict(bus), vehicles.get(str(bus.get("id")), []), static, now)[3]
-            results.append(reason)
-        evidence = {"before": _evidence(bus, before[0], static, before[1]),
-                    "after": _evidence(bus, after[0], static, after[1])}
-        categories = [None if r == "ok" else next_stop._reason_category(r) for r in results]
+        results = [next_stop._evaluate(dict(bus), vehicles.get(str(bus.get("id")), []), static, now)
+                   for vehicles, now in (before, after)]
+        if current:
+            causes = [_at_stop_cause(res, evidence[side]) for res, side in zip(results, ("before", "after"))]
+            if causes[0] and causes[0] == causes[1]:
+                record.update(status=REPRODUCED, category=causes[0],
+                              detail="both snapshots show the bus stopped with no verifiable following stop",
+                              evidence=evidence)
+            else:
+                record.update(status=NOT_CAPTURED, category="cause not captured",
+                              detail=f"snapshots do not both show this state; before: {results[0][3]!r}, "
+                                     f"after: {results[1][3]!r}", evidence=evidence)
+            records.append(record)
+            continue
+        reasons = [res[3] for res in results]
+        categories = [None if r == "ok" else next_stop._reason_category(r) for r in reasons]
         if categories[0] and categories[0] == categories[1]:
-            record.update(status=CONFIRMED, category=categories[0], detail=results[1], evidence=evidence)
+            record.update(status=REPRODUCED, category=categories[0], detail=reasons[1], evidence=evidence)
         elif categories == [None, None]:
             record.update(status=NOT_CAPTURED, category="not reproduced",
                           detail="both feed snapshots validate this bus; production's rejection was not reproduced",
                           evidence=evidence)
         else:
             record.update(status=NOT_CAPTURED, category="feed changed during capture",
-                          detail=f"before: {results[0]!r}; after: {results[1]!r}", evidence=evidence)
+                          detail=f"before: {reasons[0]!r}; after: {reasons[1]!r}", evidence=evidence)
         records.append(record)
     return records
 
 
 def print_diagnostics(buses, records):
     eligible = [b for b in buses if b.get("outdatedGps") is not True]
-    resolved = sum(1 for b in buses if b.get("nextStop") or b.get("currentStop"))
-    print(f"Next-stop diagnostics: {resolved}/{len(buses)} buses resolved "
-          f"({len(eligible)} eligible); {len(records)} without a next stop")
+    with_next = sum(1 for b in buses if b.get("nextStop"))
+    at_stop = sum(1 for r in records if r["condition"] == AT_STOP)
+    rejected = sum(1 for r in records if r["condition"] == REJECTION)
+    print(f"Next-stop diagnostics: {with_next}/{len(buses)} buses with a next stop "
+          f"({len(eligible)} eligible); {at_stop} at a stop without a next stop; {rejected} validation rejections")
     for r in records:
-        print(f"  Bus {r['bus_id']} ({r['route']}): {r['status']}: {r['category']} | {r['detail']}")
+        boundary = any(r["evidence"].get(side, {}).get("at_loop_boundary") for side in ("before", "after"))
+        print(f"  Bus {r['bus_id']} ({r['route']}): {r['condition']}"
+              f"{' (at loop start/end)' if boundary else ''}")
+        if "production_fact" in r:
+            print(f"      {r['production_fact']}")
+        print(f"      cause {r['status']}: {r['category']} | {r['detail']}")
         for side in ("before", "after"):
             if side in r["evidence"]:
                 print(f"      {side}: {json.dumps(r['evidence'][side], sort_keys=True)}")
