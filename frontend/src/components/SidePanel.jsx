@@ -30,11 +30,13 @@ function BusNextStop({ bus, isFocused, onViewStop }) {
       {/* USF routes are loops, so the trip's end stop is not a useful destination.
           Show progress through the official stop order instead; name a destination
           only for a one-way trip (none exist in USF's current GTFS). */}
-      <div className="text-[11px] text-slate-600">
-        {direction
-          ? `Route progress: Stop ${direction.stopPosition} of ${direction.stopsInTrip}`
-          : 'Route progress unavailable'}
-      </div>
+      {direction ? (
+        <div className="text-[11px] text-slate-600">
+          Route progress: Stop {direction.stopPosition} of {direction.stopsInTrip}
+        </div>
+      ) : nextStop ? (
+        <div className="text-[11px] text-slate-500">Route progress unavailable</div>
+      ) : null}
       {direction && direction.loop === false && (
         <div className="text-[11px] text-slate-600">Heading toward {direction.toward}</div>
       )}
