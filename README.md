@@ -97,8 +97,10 @@ Use `npm ci` (not `npm install`) to reproduce the CI install. If you change fron
 1. **Before merging:** CI is green and both Vercel preview builds succeed. Previews are behind Vercel Authentication, so check the backend preview's `/buses` and `/alerts` while logged in to Vercel.
 2. **Before merging, record a rollback reference:** the current production commit and frontend bundle name.
 3. **After merging, during Bull Runner service hours,** check production `https://bullrunner-2-0-coding-jam-xzak.vercel.app/buses`:
-   - running buses have non-null `nextStop` and `direction`
-   - `stopPosition` is at most `stopsInTrip`
+   - eligible buses (those without `outdatedGps: true`) generally have `nextStop` and `direction`
+   - a `null` `nextStop` / `direction` for an individual bus is **acceptable** when the validation safeguards reject incomplete or inconsistent data (for example: bus missing from the official feed, stale or distant feed position, route change, stop-order conflict at a loop's start or end), or when the bus is at a stop with no verifiable following stop (`currentStop` set)
+   - it is a **failure** only if it is systematic: all eligible buses `null` across several samples during service hours. Use `python scripts/verify_live_transit.py --diagnose-only --samples 12` to see each bus's reason.
+   - wherever `direction` is present, `stopPosition` is at most `stopsInTrip`
    - `heading`, `lat`/`lng`, `route` and `load` look right
    - `/alerts` returns 200
    - the frontend shows no "Mock data" badge
