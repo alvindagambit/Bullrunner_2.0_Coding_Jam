@@ -285,6 +285,40 @@ class TestUnavailable(NextStopTestBase):
         self.assertUnavailable(bus)
 
 
+class TestBrownRoute(NextStopTestBase):
+    """Brown: GTFS-RT + official stop order verify it, but Passio GO publishes no Brown
+    ETAs for independent comparison. It gets exactly the same safeguards, no exemptions."""
+    BROWN_TRIP, BROWN_ROUTE = "1076988", "3099"
+
+    def brown(self, seq, **vehicle):
+        stop_id = static()["trips"][self.BROWN_TRIP]["stops"][seq]
+        bus = bus_at(stop_id, id=17259, name="2422", route="Brown")
+        v = make_vehicle("17259", label="2422", seq=seq, stop_id=stop_id, trip_id=self.BROWN_TRIP,
+                         route_id=self.BROWN_ROUTE, **vehicle)
+        return bus, v
+
+    def test_verified_brown_shows_next_stop_and_progress(self):
+        bus, v = self.brown(7)
+        self.run_feed([bus], v)
+        self.assertEqual(bus["nextStop"]["name"], "Library")
+        self.assertEqual((bus["direction"]["stopSequence"], bus["direction"]["stopsInTrip"]), (7, 7))
+
+    def test_questionable_brown_data_is_unavailable(self):
+        cases = {
+            "passio gps outdated": ({"outdatedGps": True}, {}),
+            "old feed position": ({}, {"timestamp": NOW - next_stop.MAX_POSITION_AGE_SECONDS - 1}),
+            "sequence conflict": ({}, {"stop_id": "70691"}),
+            "route changed": ({"route": "Red"}, {}),
+        }
+        for label, (bus_changes, vehicle_changes) in cases.items():
+            with self.subTest(label):
+                bus, v = self.brown(5)
+                bus.update(bus_changes)
+                v.update(vehicle_changes)
+                self.run_feed([bus], v)
+                self.assertUnavailable(bus)
+
+
 class TestIncompleteGtfs(NextStopTestBase):
     def test_unknown_trip_shows_live_stop_without_direction(self):
         [bus] = self.run_feed([bus_at("70726")], make_vehicle(seq=2, stop_id="70726", trip_id="999999"))

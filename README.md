@@ -84,7 +84,8 @@ curl -s http://localhost:5173/api/buses    # through the Vite proxy
 
 - **Stale GPS is flagged**: buses with `outdatedGps: true` are shown with muted dashed map markers and warnings in the route panel. Their positions may be outdated.
 - **Alerts require live verification**: GTFS-Realtime integration must be tested against the upstream feed before release; errors must never be treated as no advisories.
-- **Next stop is shown only when verified**: route cards show each bus's next stop and loop direction from USF's official GTFS-Realtime feed, checked against the official stop order. Otherwise they say "Next stop unavailable" / "Direction unavailable". The Brown route can't yet be cross-checked against the Passio GO tracker, because Passio publishes no Brown arrival times. Arrival times are not shown.
+- **Next stop is shown only when verified**: route cards show each bus's next stop and route progress ("Stop X of Y") from USF's official GTFS-Realtime feed, checked against the official stop order. Otherwise they say "Next stop unavailable" / "Route progress unavailable". Arrival times are not shown.
+- **Brown route not independently cross-checked**: Brown next stops pass the same live-feed and official stop-order checks as every route, but Passio GO publishes no Brown arrival times, so they can't be compared with the official tracker. They are shown, with the same safeguards; stale or conflicting data shows "Next stop unavailable".
 - **MSC Express has no route line**: the route exists in PassioGo but not in the GTFS data, so its buses appear without a line, and without a next stop.
 - **No CI**: tests and lint only run locally. Vercel builds each PR, but it doesn't run the tests.
 - **No caching**: every frontend poll (each tab, every 5 s) reaches PassioGo.

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 /**
- * One active bus inside a route card: its verified next stop and direction.
+ * One active bus inside a route card: its verified next stop and route progress.
  * nextStop / currentStop / direction come from /buses and are null whenever the
  * backend could not establish them reliably; nothing is guessed here.
  */
@@ -27,11 +27,17 @@ function BusNextStop({ bus, isFocused, onViewStop }) {
       ) : (
         <div className="text-sm font-semibold text-slate-500">Next stop unavailable</div>
       )}
+      {/* USF routes are loops, so the trip's end stop is not a useful destination.
+          Show progress through the official stop order instead; name a destination
+          only for a one-way trip (none exist in USF's current GTFS). */}
       <div className="text-[11px] text-slate-600">
         {direction
-          ? `Heading toward ${direction.toward}${direction.loop ? ' (end of loop)' : ''} · stop ${direction.stopSequence} of ${direction.stopsInTrip}`
-          : 'Direction unavailable'}
+          ? `Route progress: Stop ${direction.stopSequence} of ${direction.stopsInTrip}`
+          : 'Route progress unavailable'}
       </div>
+      {direction && direction.loop === false && (
+        <div className="text-[11px] text-slate-600">Heading toward {direction.toward}</div>
+      )}
       {mapStop && (
         <button
           type="button"

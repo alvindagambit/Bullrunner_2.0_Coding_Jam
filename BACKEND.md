@@ -117,7 +117,7 @@ proximity, and no arrival times are given.
 |---|---|---|
 | `nextStop` | object or null | `{ "id", "name", "lat", "lng" }`: the stop the bus is approaching, from the official GTFS-Realtime `vehiclePositions` feed. Name and coordinates come from `frontend/public/stops.json`. |
 | `currentStop` | object or null | Same shape. Set only when the feed explicitly reports `STOPPED_AT` (USF's feed currently never does). `nextStop` is then the following stop in the official order. |
-| `direction` | object or null | `{ "toward", "towardStopId", "loop", "stopSequence", "stopsInTrip" }`. `toward` is the trip's final stop. Every USF trip is a loop, so this is its start and end stop (Marshall Student Center, or Library for Brown). `stopSequence` is the position of `nextStop` in the official order. |
+| `direction` | object or null | `{ "toward", "towardStopId", "loop", "stopSequence", "stopsInTrip" }`. `toward` is the trip's final stop. Every USF trip is a loop, so this is its start and end stop (Marshall Student Center, or Library for Brown). `stopSequence` is the position of `nextStop` in the official order. The frontend shows it as "Route progress: Stop X of Y" and names `toward` only when `loop` is `false`. |
 
 `nextStop` requires **all** of these, checked on every request (no per-bus state is kept, so route changes are handled):
 1. `outdatedGps` is not `true`.
@@ -133,6 +133,11 @@ proximity, and no arrival times are given.
 the reported stop is the upcoming one. This was confirmed against the official
 Passio GO tracker. If the `vehiclePositions` feed fails, these three fields are
 `null` and the rest of `/buses` is unaffected.
+
+**Brown route:** Brown passes the same checks as every route and is not
+special-cased. However, Passio GO publishes no Brown arrival times, so Brown
+next stops have not been independently cross-checked against the official
+tracker (verified 2026-11-15 and 2026-11-16).
 
 `gtfs/stop_times.txt` is an unmodified copy of the official file from
 `https://passio3.com/usf/passioTransit/gtfs/google_transit.zip` (feed valid

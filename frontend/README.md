@@ -44,7 +44,7 @@ stops.json     -> [{ id, name, lat, lng }]
 
 `route` in `/buses` must match `name` in `routes.json` exactly; otherwise route filtering won't line up. `outdatedGps` is used to visually distinguish stale bus locations and show route-level warnings.
 
-Each active route card lists its buses with "Next stop: …", the stop ID, "Heading toward …" and a **View on Map** action. That action centers the map on the stop, highlights it, and shows **Back to full map**; route filtering keeps working. When `nextStop` or `direction` is `null`, the card says "Next stop unavailable" or "Direction unavailable". Mock buses have no next-stop data, so they always show "unavailable".
+Each active route card lists its buses with "Next stop: …", the stop ID, "Route progress: Stop X of Y" and a **View on Map** action. USF routes are loops, so the loop's end stop isn't shown as a destination; "Heading toward …" appears only for a one-way trip (none exist today). **View on Map** centers the map on the stop, highlights it, and shows **Back to full map**; route filtering keeps working. When `nextStop` or `direction` is `null`, the card says "Next stop unavailable" or "Route progress unavailable". Mock buses have no next-stop data, so they always show "unavailable".
 
 ## Files
 
