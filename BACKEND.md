@@ -1,7 +1,8 @@
 # Bullrunner 2.0 Backend: Live Buses API
 
 Python Flask backend that serves live USF Bull Runner vehicle positions from
-PassioGo (USF system ID `2343`).
+PassioGo (USF system ID `2343`), each bus's verified next stop from USF's
+official GTFS-Realtime feed, and official USF service alerts.
 
 This file is the source of truth for the backend API contract. The frontend's
 static data formats (`routes.json`, `stops.json`) are documented in
@@ -78,7 +79,12 @@ Returns a JSON array of **in-service** USF buses. When no buses are running
     "heading": 89.72,
     "updated": "03:26 PM",
     "latitude": 28.0656675,
-    "longitude": -82.412397
+    "longitude": -82.412397,
+
+    "nextStop": { "id": "70748", "name": "Marshall Student Center", "lat": 28.064292, "lng": -82.413807 },
+    "currentStop": null,
+    "direction": { "toward": "Marshall Student Center", "towardStopId": "70748", "loop": true,
+                   "stopPosition": 29, "stopsInTrip": 29, "stopSequence": 29 }
   }
 ]
 ```
@@ -138,10 +144,15 @@ Passio GO tracker. If the `vehiclePositions` feed fails, these three fields are
 Python builder (`@vercel/python`) never bundles any `**/public/**` path into the
 function, so backend code must not depend on `frontend/public/`. An earlier
 version did, and production returned `nextStop: null` for every bus. A test now
-guards this. Next-stop diagnostics are written to the server logs (for example,
-Vercel runtime logs) as `[stage=static]`, `[stage=feed]` or `[stage=validate]`,
-plus one summary line per request with counts of unresolved reasons. Nothing
-is added to API responses.
+guards this. Next-stop diagnostics go to the server logs only (for example,
+Vercel runtime logs); nothing is added to API responses:
+- `Next-stop static GTFS loaded: … stops, … routes, … trip patterns` once per
+  cold start (INFO).
+- `[stage=static]` (ERROR) and `[stage=feed]` (WARNING) failures, each logged at
+  most once per 5 minutes.
+- `[stage=validate]`: a WARNING (at most once per 5 minutes) only when eligible
+  buses exist but none resolved; routine per-request summaries and per-bus
+  reasons are DEBUG.
 
 **Brown route:** Brown passes the same checks as every route and is not
 special-cased. However, Passio GO publishes no Brown arrival times, so Brown
@@ -184,8 +195,7 @@ If the feed is unavailable or invalid, the endpoint returns `502` with
 `{"error":"Service alerts temporarily unavailable"}`, and the frontend
 displays an **alerts unavailable** warning, not a false "no alerts" result.
 
-**Release gate:** Verify real feed access and alert contents on Vercel before
-merging this PR.
+Verified against the live feed in production on 2026-11-16.
 
 ## Files
 
@@ -198,6 +208,8 @@ merging this PR.
 | `tests/test_next_stop.py` | Offline next-stop tests, including dataset consistency checks |
 | `passio_client.py` | Fetches and validates live bus data from PassioGo |
 | `tests/test_buses.py` | Automated tests for `/buses` |
+| `gtfs/*.txt` | Official USF static GTFS (stops, routes, trips, stop order) read at runtime |
+| `scripts/verify_live_transit.py` | Read-only live check of production next stops against GTFS-Realtime (not used by the app) |
 | `requirements.txt` | Pinned backend dependencies |
 
 > **Why not `passiogo.getVehicles()`?** PassioGo 0.2.2 has a bug: its `Vehicle`

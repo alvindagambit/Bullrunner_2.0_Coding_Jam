@@ -1,7 +1,7 @@
 """Read-only live feed checks for Bullrunner 2.0.
 
 From the repository root after activating the venv:
-    pip install gtfs-realtime-bindings==3.0.0 protobuf==7.36.2
+    pip install -r requirements.txt   # includes gtfs-realtime-bindings and protobuf
     python scripts/verify_live_transit.py
 
 Checks production bus locations against USF's independently published
