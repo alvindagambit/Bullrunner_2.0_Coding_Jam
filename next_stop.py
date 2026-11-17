@@ -200,14 +200,20 @@ def _evaluate(bus, matches, static, now):
 
     direction = None
     if sequence_verified and next_seq is not None:
+        # GTFS stop_sequence only has to increase; it need not start at 1 or be
+        # consecutive. The rider-facing position is the 1-based index of the
+        # sequence value in the trip's ordered stop_times records, so it is
+        # always within 1..stopsInTrip. A stop ID visited twice (e.g. a loop's
+        # start/end) is told apart by its sequence value, never by its ID.
         ordered = sorted(pattern["stops"])
         end_id = pattern["stops"][ordered[-1]]
         direction = {
             "towardStopId": end_id,
             "toward": static["stops"][end_id]["name"],
             "loop": pattern["stops"][ordered[0]] == end_id,
-            "stopSequence": next_seq,
+            "stopPosition": ordered.index(next_seq) + 1,
             "stopsInTrip": len(ordered),
+            "stopSequence": next_seq,  # raw GTFS stop_sequence value
         }
     return next_stop, current_stop, direction, "ok"
 

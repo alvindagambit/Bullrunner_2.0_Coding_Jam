@@ -157,7 +157,8 @@ class TestApproachingStop(NextStopTestBase):
                                            "lat": stop("70726")["lat"], "lng": stop("70726")["lng"]})
         self.assertIsNone(bus["currentStop"])
         self.assertEqual(bus["direction"], {"towardStopId": "70748", "toward": "Marshall Student Center",
-                                          "loop": True, "stopSequence": 2, "stopsInTrip": 35})
+                                          "loop": True, "stopPosition": 2, "stopsInTrip": 35,
+                                          "stopSequence": 2})
 
     def test_unreported_status_is_treated_as_in_transit_to(self):
         [bus] = self.run_feed([bus_at(red_stop_id(10))], make_vehicle(seq=10))
@@ -175,7 +176,7 @@ class TestApproachingStop(NextStopTestBase):
         self.run_feed(buses, make_vehicle(seq=4), make_vehicle("21338", seq=20, label="2620"))
         self.assertEqual(buses[0]["nextStop"]["id"], red_stop_id(4))
         self.assertEqual(buses[1]["nextStop"]["id"], red_stop_id(20))
-        self.assertEqual((buses[0]["direction"]["stopSequence"], buses[1]["direction"]["stopSequence"]), (4, 20))
+        self.assertEqual((buses[0]["direction"]["stopPosition"], buses[1]["direction"]["stopPosition"]), (4, 20))
 
     def test_bus_advances_to_following_stop(self):
         bus = bus_at(red_stop_id(6))
@@ -184,14 +185,14 @@ class TestApproachingStop(NextStopTestBase):
         bus.update(lat=stop(red_stop_id(7))["lat"], lng=stop(red_stop_id(7))["lng"])  # Passio moves too
         self.run_feed([bus], make_vehicle(seq=7))
         self.assertEqual(bus["nextStop"]["id"], red_stop_id(7))
-        self.assertEqual(bus["direction"]["stopSequence"], 7)
+        self.assertEqual(bus["direction"]["stopPosition"], 7)
 
     def test_loop_wraps_from_final_stop_to_second_stop(self):
         bus = bus_at("70748")
         self.run_feed([bus], make_vehicle(seq=35))
-        self.assertEqual((bus["nextStop"]["name"], bus["direction"]["stopSequence"]), ("Marshall Student Center", 35))
+        self.assertEqual((bus["nextStop"]["name"], bus["direction"]["stopPosition"]), ("Marshall Student Center", 35))
         self.run_feed([bus], make_vehicle(seq=2))
-        self.assertEqual((bus["nextStop"]["name"], bus["direction"]["stopSequence"]), ("Post Office", 2))
+        self.assertEqual((bus["nextStop"]["name"], bus["direction"]["stopPosition"]), ("Post Office", 2))
 
 
 class TestStoppedAtStop(NextStopTestBase):
@@ -199,13 +200,13 @@ class TestStoppedAtStop(NextStopTestBase):
         [bus] = self.run_feed([bus_at("70726")], make_vehicle(seq=2, status=Status.STOPPED_AT))
         self.assertEqual(bus["currentStop"]["name"], "Post Office")
         self.assertEqual(bus["nextStop"]["id"], red_stop_id(3))
-        self.assertEqual(bus["direction"]["stopSequence"], 3)
+        self.assertEqual(bus["direction"]["stopPosition"], 3)
 
     def test_stopped_at_final_loop_stop_continues_with_second_stop(self):
         [bus] = self.run_feed([bus_at("70748")], make_vehicle(seq=35, status=Status.STOPPED_AT))
         self.assertEqual(bus["currentStop"]["name"], "Marshall Student Center")
         self.assertEqual(bus["nextStop"]["name"], "Post Office")
-        self.assertEqual(bus["direction"]["stopSequence"], 2)
+        self.assertEqual(bus["direction"]["stopPosition"], 2)
 
     def test_stopped_at_without_verified_sequence_has_no_next_stop(self):
         [bus] = self.run_feed([bus_at("70726")], make_vehicle(seq=None, stop_id="70726", status=Status.STOPPED_AT))
@@ -285,6 +286,92 @@ class TestUnavailable(NextStopTestBase):
         self.assertUnavailable(bus)
 
 
+class TestRouteProgressPosition(NextStopTestBase):
+    """'Route progress: Stop X of Y' must be the ordinal position in the ordered
+    stop_times records, not the raw GTFS stop_sequence (which may skip values or
+    start above 1)."""
+
+    # Real stop IDs; synthetic patterns on the Red route.
+    A, B, C, D = "70748", "70726", "70728", "70737"
+    PATTERNS = {
+        "GAPS_LOOP": {10: A, 20: B, 40: C, 70: D, 100: A},  # skipped values, loop A..A
+        "STARTS_AT_5": {5: A, 6: B, 7: C},                   # does not start at 1
+        "DUPLICATE": {1: A, 2: B, 3: C, 4: B, 5: D},          # B visited twice, one-way
+    }
+
+    def setUp(self):
+        super().setUp()
+        real = next_stop.load_static()
+        trips = dict(real["trips"])
+        for trip_id, stops in self.PATTERNS.items():
+            trips[trip_id] = {"route_id": RED_ROUTE_ID, "stops": dict(stops)}
+        patched = mock.patch("next_stop.load_static", return_value={**real, "trips": trips})
+        patched.start()
+        self.addCleanup(patched.stop)
+
+    def run_pattern(self, trip_id, seq, status=None):
+        stop_id = self.PATTERNS[trip_id][seq]
+        bus = bus_at(stop_id)
+        self.run_feed([bus], make_vehicle(seq=seq, stop_id=stop_id, trip_id=trip_id, status=status))
+        return bus
+
+    def test_skipped_sequence_values_use_ordinal_position(self):
+        bus = self.run_pattern("GAPS_LOOP", 40)
+        self.assertEqual(bus["nextStop"]["id"], self.C)
+        d = bus["direction"]
+        self.assertEqual((d["stopPosition"], d["stopsInTrip"], d["stopSequence"]), (3, 5, 40))
+
+    def test_sequence_not_starting_at_one(self):
+        d = self.run_pattern("STARTS_AT_5", 5)["direction"]
+        self.assertEqual((d["stopPosition"], d["stopsInTrip"], d["stopSequence"]), (1, 3, 5))
+
+    def test_last_stop_of_gapped_loop(self):
+        d = self.run_pattern("GAPS_LOOP", 100)["direction"]
+        self.assertEqual((d["stopPosition"], d["stopsInTrip"]), (5, 5))
+        self.assertTrue(d["loop"])
+
+    def test_loop_wraparound_with_gaps_when_stopped_at_final_stop(self):
+        bus = self.run_pattern("GAPS_LOOP", 100, status=Status.STOPPED_AT)
+        self.assertEqual(bus["currentStop"]["id"], self.A)
+        self.assertEqual(bus["nextStop"]["id"], self.B)
+        self.assertEqual((bus["direction"]["stopPosition"], bus["direction"]["stopSequence"]), (2, 20))
+
+    def test_stopped_before_final_stop_advances_across_gap(self):
+        bus = self.run_pattern("GAPS_LOOP", 70, status=Status.STOPPED_AT)
+        self.assertEqual(bus["nextStop"]["id"], self.A)
+        self.assertEqual((bus["direction"]["stopPosition"], bus["direction"]["stopSequence"]), (5, 100))
+
+    def test_duplicate_stop_id_uses_its_own_sequence_position(self):
+        first = self.run_pattern("DUPLICATE", 2)["direction"]
+        second = self.run_pattern("DUPLICATE", 4)["direction"]
+        self.assertEqual((first["stopPosition"], second["stopPosition"]), (2, 4))
+        self.assertFalse(second["loop"])
+        self.assertEqual(second["toward"], stop(self.D)["name"])
+
+    def test_sequence_value_not_in_pattern_is_unavailable(self):
+        bus = bus_at(self.B)
+        self.run_feed([bus], make_vehicle(seq=30, stop_id=self.B, trip_id="GAPS_LOOP"))
+        self.assertUnavailable(bus)
+
+    def test_position_never_exceeds_total_for_any_official_trip(self):
+        for trip_id, pattern in static()["trips"].items():
+            if trip_id in self.PATTERNS:
+                continue
+            ordered = sorted(pattern["stops"])
+            for rank, seq in enumerate(ordered, start=1):
+                stop_id = pattern["stops"][seq]
+                bus = bus_at(stop_id, route=self.route_name(pattern["route_id"]))
+                self.run_feed([bus], make_vehicle(seq=seq, stop_id=stop_id, trip_id=trip_id, route_id=pattern["route_id"]))
+                d = bus["direction"]
+                with self.subTest(trip=trip_id, seq=seq):
+                    self.assertEqual(d["stopPosition"], rank)
+                    self.assertTrue(1 <= d["stopPosition"] <= d["stopsInTrip"] == len(ordered))
+
+    @staticmethod
+    def route_name(route_id):
+        return next(name for name, ids in static()["route_ids_by_name"].items() if route_id in ids)
+
+
 class TestBrownRoute(NextStopTestBase):
     """Brown: GTFS-RT + official stop order verify it, but Passio GO publishes no Brown
     ETAs for independent comparison. It gets exactly the same safeguards, no exemptions."""
@@ -301,7 +388,7 @@ class TestBrownRoute(NextStopTestBase):
         bus, v = self.brown(7)
         self.run_feed([bus], v)
         self.assertEqual(bus["nextStop"]["name"], "Library")
-        self.assertEqual((bus["direction"]["stopSequence"], bus["direction"]["stopsInTrip"]), (7, 7))
+        self.assertEqual((bus["direction"]["stopPosition"], bus["direction"]["stopsInTrip"]), (7, 7))
 
     def test_questionable_brown_data_is_unavailable(self):
         cases = {

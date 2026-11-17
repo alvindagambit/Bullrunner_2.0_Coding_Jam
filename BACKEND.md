@@ -117,7 +117,7 @@ proximity, and no arrival times are given.
 |---|---|---|
 | `nextStop` | object or null | `{ "id", "name", "lat", "lng" }`: the stop the bus is approaching, from the official GTFS-Realtime `vehiclePositions` feed. Name and coordinates come from `frontend/public/stops.json`. |
 | `currentStop` | object or null | Same shape. Set only when the feed explicitly reports `STOPPED_AT` (USF's feed currently never does). `nextStop` is then the following stop in the official order. |
-| `direction` | object or null | `{ "toward", "towardStopId", "loop", "stopSequence", "stopsInTrip" }`. `toward` is the trip's final stop. Every USF trip is a loop, so this is its start and end stop (Marshall Student Center, or Library for Brown). `stopSequence` is the position of `nextStop` in the official order. The frontend shows it as "Route progress: Stop X of Y" and names `toward` only when `loop` is `false`. |
+| `direction` | object or null | `{ "toward", "towardStopId", "loop", "stopPosition", "stopsInTrip", "stopSequence" }`. `toward` is the trip's final stop. Every USF trip is a loop, so this is its start and end stop (Marshall Student Center, or Library for Brown). `stopPosition` is the 1-based position of `nextStop` among the trip's ordered `stop_times.txt` records, always between 1 and `stopsInTrip`. `stopSequence` is the raw GTFS `stop_sequence`, which may skip values or not start at 1. A stop visited twice (such as a loop's start and end) is told apart by its sequence value. The frontend shows "Route progress: Stop `stopPosition` of `stopsInTrip`" and names `toward` only when `loop` is `false`. |
 
 `nextStop` requires **all** of these, checked on every request (no per-bus state is kept, so route changes are handled):
 1. `outdatedGps` is not `true`.
