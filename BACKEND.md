@@ -49,7 +49,7 @@ origin.
 ## Test
 
 ```bash
-# Automated tests (mocked upstream, no network needed)
+# Automated tests (mocked upstream, no network needed; also run by GitHub Actions CI)
 python -m unittest discover -s tests -v
 
 # Live check (server must be running)
