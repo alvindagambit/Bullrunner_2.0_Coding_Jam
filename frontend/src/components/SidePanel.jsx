@@ -80,6 +80,7 @@ export default function SidePanel({
   onViewStop = () => {},
 }) {
   const [secondsAgo, setSecondsAgo] = useState(0)
+  const [alertsExpanded, setAlertsExpanded] = useState(false)
 
   useEffect(() => {
     if (!lastUpdated) return
@@ -146,40 +147,53 @@ export default function SidePanel({
         </div>
       )}
 
-      {/* Alerts Banner */}
+      {/* Collapsible service advisory section; titles and details remain accessible on demand. */}
       {alerts.length > 0 && (
-        <div className="border-b border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900">
-          <div className="mb-1 flex items-center gap-1.5 font-semibold text-amber-800">
-            <span>Active Transit Alerts</span>
+        <section className="border-b border-amber-500/30 bg-amber-50 text-amber-950" aria-label="Transit service alerts">
+          <button
+            type="button"
+            aria-expanded={alertsExpanded}
+            aria-controls="transit-alert-details"
+            onClick={() => setAlertsExpanded((value) => !value)}
+            className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2.5 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#006747]"
+          >
+            <span className="text-xs font-bold">
+              Active Transit Alerts ({alerts.length})
+            </span>
+            <span className="shrink-0 text-xs font-semibold">
+              {alertsExpanded ? 'Hide details −' : 'Show details +'}
+            </span>
+          </button>
+          <div id="transit-alert-details" hidden={!alertsExpanded} className="space-y-3 border-t border-amber-200 px-3 py-3 text-xs leading-relaxed">
+            {alerts.map((alert) => (
+              <div key={alert.id ?? alert.name}>
+                <p className="font-semibold">{alert.name ?? alert.message ?? 'Service advisory in effect.'}</p>
+                {alert.message && alert.message !== alert.name && (
+                  <p className="mt-1 whitespace-pre-line">{alert.message}</p>
+                )}
+              </div>
+            ))}
           </div>
-          {alerts.map((alert) => (
-            <p key={alert.id ?? alert.name} className="leading-tight">
-              {alert.name ?? alert.message ?? 'Service advisory in effect.'}
-              {alert.message && alert.message !== alert.name && (
-                <span className="mt-1 block font-normal whitespace-pre-line">{alert.message}</span>
-              )}
-            </p>
-          ))}
-        </div>
+        </section>
       )}
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-3 gap-2 border-b border-slate-200 bg-slate-50 p-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-3 text-center shadow-sm">
+      <div className="grid grid-cols-3 gap-2 border-b border-slate-200 bg-slate-50 p-2.5 md:p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-2 text-center shadow-sm md:p-3">
           <span className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase">
             Buses Live
           </span>
           <span className="text-2xl font-black text-[#006747]">{liveBusesCount}</span>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-3 text-center shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-2 text-center shadow-sm md:p-3">
           <span className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase">
             Active Routes
           </span>
           <span className="text-2xl font-black text-[#006747]">{activeRoutesCount}</span>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-3 text-center shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-2 text-center shadow-sm md:p-3">
           <span className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase">
             Avg Load
           </span>
@@ -200,7 +214,7 @@ export default function SidePanel({
       )}
 
       {/* Route List Filter */}
-      <div className="flex flex-none flex-col gap-2 p-4 md:flex-1">
+      <div className="flex flex-none flex-col gap-1.5 p-3 md:flex-1 md:gap-2 md:p-4">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-xs font-bold tracking-wider text-slate-500 uppercase">
             Campus Routes ({routes.length})
@@ -237,7 +251,7 @@ export default function SidePanel({
               <button
                 type="button"
                 onClick={() => onSelectRoute(isSelected ? null : route.name)}
-                className={`flex w-full cursor-pointer items-center justify-between p-3 text-left ${
+                className={`flex w-full cursor-pointer items-center justify-between p-2.5 text-left md:p-3 ${
                   isSelected ? '' : 'hover:bg-slate-50'
                 }`}
               >
@@ -271,7 +285,7 @@ export default function SidePanel({
               </button>
 
               {routeBuses.length > 0 && (
-                <ul className="flex flex-col gap-2 border-t border-slate-200/80 px-3 pt-2 pb-3">
+                <ul className="flex flex-col gap-1.5 border-t border-slate-200/80 px-2.5 pt-1.5 pb-2.5 md:gap-2 md:px-3 md:pt-2 md:pb-3">
                   {routeBuses.map((bus) => (
                     <BusNextStop
                       key={bus.id}
