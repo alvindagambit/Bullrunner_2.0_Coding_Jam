@@ -3,11 +3,17 @@
 Sources (all official USF / Passio data):
   - GTFS-Realtime vehiclePositions: per vehicle, the trip, the reported stop ID
     and current_stop_sequence.
-  - Static GTFS in gtfs/ (routes.txt, trips.txt, stop_times.txt): the ordered
-    stop sequence of each trip. Every USF trip is a loop that starts and ends
-    at the same stop; trip_headsign and direction_id are not published.
-  - frontend/public/stops.json: stop names and coordinates (generated from
-    gtfs/stops.txt; IDs and coordinates identical).
+  - Static GTFS in gtfs/ (stops.txt, routes.txt, trips.txt, stop_times.txt):
+    stop names and coordinates, and the ordered stop sequence of each trip.
+    Every USF trip is a loop that starts and ends at the same stop;
+    trip_headsign and direction_id are not published.
+
+Stops are read from gtfs/stops.txt, not frontend/public/stops.json. Vercel's
+Python builder never bundles any "**/public/**" path into the function, so a
+backend dependency on frontend/public silently disables next stops in
+production. Names use the same rule as gtfs/convert_gtfs.py (the official name
+without its "NNNNN - " stop-code prefix), so they equal stops.json exactly; a
+test enforces this.
 
 A bus gets a nextStop only when every check passes; otherwise it is null.
 Nothing is inferred from proximity, and nothing is remembered between requests,
@@ -19,7 +25,7 @@ Checks, in order:
   3. The feed position is fresh (<= MAX_POSITION_AGE_SECONDS old).
   4. The feed position agrees with Passio's (<= MAX_GPS_DISTANCE_METERS).
   5. The vehicle's trip route matches the bus's current route.
-  6. The reported stop ID exists in stops.json.
+  6. The reported stop ID exists in the official stop list (gtfs/stops.txt).
   7. If the trip's official stop order is known, the stop at
      current_stop_sequence must be the reported stop. A mismatch is
      conflicting evidence, so the result is null rather than a guess.
@@ -34,10 +40,11 @@ direction is set only when the stop order is verified (check 7). It names the
 trip's final stop, which for USF's loops is the loop's start/end stop.
 """
 import csv
-import json
 import logging
 import math
+import re
 import time
+from collections import Counter
 from functools import lru_cache
 from pathlib import Path
 
@@ -46,8 +53,8 @@ from google.protobuf.message import DecodeError
 from google.transit import gtfs_realtime_pb2
 
 ROOT = Path(__file__).resolve().parent
-STOPS_PATH = ROOT / "frontend" / "public" / "stops.json"
-GTFS_DIR = ROOT / "gtfs"
+GTFS_DIR = ROOT / "gtfs"  # must not live under any "public/" directory (see module docstring)
+STOP_CODE_PREFIX = re.compile(r"^\d+\s*-\s*")  # same rule as gtfs/convert_gtfs.py
 
 VEHICLE_POSITIONS_URL = "https://passio3.com/usf/passioTransit/gtfs/realtime/vehiclePositions"
 REQUEST_TIMEOUT_SECONDS = 4
@@ -80,10 +87,14 @@ def _read_csv(name):
 def load_static():
     """Load and cross-validate stops and official trip patterns (cached)."""
     stops = {}
-    for entry in json.loads(STOPS_PATH.read_text(encoding="utf-8")):
-        stop_id, name = str(entry.get("id", "")), entry.get("name")
-        lat, lng = entry.get("lat"), entry.get("lng")
-        if stop_id and name and isinstance(lat, (int, float)) and isinstance(lng, (int, float)):
+    for row in _read_csv("stops.txt"):
+        stop_id = (row.get("stop_id") or "").strip()
+        name = STOP_CODE_PREFIX.sub("", (row.get("stop_name") or "").strip())
+        try:
+            lat, lng = float(row["stop_lat"]), float(row["stop_lon"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if stop_id and name and math.isfinite(lat) and math.isfinite(lng):
             stops[stop_id] = {"id": stop_id, "name": name, "lat": lat, "lng": lng}
 
     route_ids_by_name = {}
@@ -105,6 +116,8 @@ def load_static():
             logger.warning("Ignoring trip %s pattern: unknown trip or stops %s", trip_id, missing)
             continue
         trips[trip_id] = {"route_id": trip_route[trip_id], "stops": by_seq}
+    logger.info("Next-stop static GTFS loaded: %d stops, %d routes, %d trip patterns",
+                len(stops), len(route_ids_by_name), len(trips))
     return {"stops": stops, "route_ids_by_name": route_ids_by_name, "trips": trips}
 
 
@@ -175,7 +188,7 @@ def _evaluate(bus, matches, static, now):
     stop_id = v.stop_id if v.HasField("stop_id") else ""
     stop = static["stops"].get(stop_id)
     if stop is None:
-        return None, None, None, f"stop id {stop_id!r} missing from stops.json"
+        return None, None, None, f"stop id {stop_id!r} missing from gtfs/stops.txt"
 
     pattern = static["trips"].get(v.trip.trip_id) if v.trip.HasField("trip_id") else None
     if pattern and pattern["route_id"] != trip_route_id:
@@ -230,25 +243,74 @@ def add_next_stops(buses, now=None):
         bus["nextStop"] = bus["currentStop"] = bus["direction"] = None
     if not buses:
         return buses
+    # Stage 1: static GTFS (cached after the first success).
     try:
         static = load_static()
+    except Exception as exc:
+        if _should_log("static"):
+            logger.error("Next-stop data unavailable [stage=static]: cannot load gtfs/*.txt (%s: %s)%s",
+                         type(exc).__name__, getattr(exc, "filename", None) or exc, _THROTTLE_NOTE)
+        return buses
+    # Stage 2: live vehiclePositions feed.
+    try:
         vehicles = fetch_vehicle_positions()
-    except FeedError:
-        logger.warning("Next-stop data unavailable: vehiclePositions feed failed", exc_info=True)
+    except FeedError as exc:
+        cause = exc.__cause__ or exc
+        if _should_log("feed"):
+            logger.warning("Next-stop data unavailable [stage=feed]: vehiclePositions request failed (%s)%s",
+                           type(cause).__name__, _THROTTLE_NOTE)
         return buses
     except Exception:
-        logger.exception("Next-stop data unavailable")
+        if _should_log("feed"):
+            logger.exception("Next-stop data unavailable [stage=feed]")
         return buses
 
+    # Stage 3: per-vehicle validation. Routine results at DEBUG; a throttled WARNING
+    # only when the failure looks systematic (eligible buses exist, none resolved).
     now = int(time.time()) if now is None else now
+    reasons = Counter()
     for bus in buses:
         try:
             next_stop, current_stop, direction, reason = _evaluate(
                 bus, vehicles.get(str(bus.get("id")), []), static, now)
         except Exception:
-            logger.exception("Next-stop evaluation failed for bus %s", bus.get("id"))
+            if _should_log("evaluate"):
+                logger.exception("Next-stop evaluation failed for bus %s", bus.get("id"))
+            reasons["evaluation error"] += 1
             continue
         bus["nextStop"], bus["currentStop"], bus["direction"] = next_stop, current_stop, direction
         if reason != "ok":
-            logger.info("Bus %s next stop unavailable: %s", bus.get("id"), reason)
+            reasons[_reason_category(reason)] += 1
+            logger.debug("Bus %s next stop unavailable: %s", bus.get("id"), reason)
+    resolved = sum(1 for b in buses if b["nextStop"] or b["currentStop"])
+    eligible = sum(1 for b in buses if b.get("outdatedGps") is not True)
+    summary = (resolved, len(buses), len(vehicles), dict(reasons) or "{}")
+    if eligible and not resolved and _should_log("validate"):
+        logger.warning("Next-stop enrichment [stage=validate]: 0 resolved; %d/%d buses resolved; "
+                       "feed vehicles=%d; unresolved=%s" + _THROTTLE_NOTE, *summary)
+    else:
+        logger.debug("Next-stop enrichment [stage=validate]: %d/%d buses resolved; "
+                     "feed vehicles=%d; unresolved=%s", *summary)
     return buses
+
+
+# Each distinct failure is logged at most once per window, so clients polling
+# every few seconds cannot flood the logs during an outage.
+LOG_THROTTLE_SECONDS = 300
+_THROTTLE_NOTE = " (repeats suppressed for 5 min)"
+_last_logged = {}
+
+
+def _should_log(key, clock=time.monotonic):
+    now = clock()
+    last = _last_logged.get(key)
+    if last is not None and now - last < LOG_THROTTLE_SECONDS:
+        return False
+    _last_logged[key] = now
+    return True
+
+
+def _reason_category(reason):
+    """Collapse a detailed reason to a stable category for log summaries."""
+    head = re.sub(r"\s+with id\b.*$", "", reason.split(":")[0])
+    return re.sub(r"\d+", "N", head).strip()

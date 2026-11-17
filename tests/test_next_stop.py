@@ -1,7 +1,7 @@
 """Tests for live next-stop and direction enrichment of /buses.
 
-Uses the real repository data (frontend/public/stops.json and the official
-gtfs/*.txt trip sequences) and constructed GTFS-Realtime feeds. No network.
+Uses the real repository data (the official gtfs/*.txt files, checked against
+frontend/public/stops.json) and constructed GTFS-Realtime feeds. No network.
 
 Run from the repo root:  python -m unittest discover -s tests -v
 """
@@ -23,6 +23,7 @@ from test_buses import make_bus, mock_response, payload  # noqa: E402
 
 NOW = 1_794_860_000
 RED_ROUTE_ID, BLUE_ROUTE_ID = "3095", "3093"
+FRONTEND_STOPS = next_stop.ROOT / "frontend" / "public" / "stops.json"
 RED_TRIP = "1187361"   # official Red loop: 35 stops, Marshall Student Center -> ... -> Marshall Student Center
 BLUE_TRIP = "1076994"
 Status = gtfs_realtime_pb2.VehiclePosition
@@ -103,6 +104,8 @@ class NextStopTestBase(unittest.TestCase):
         log_patcher = mock.patch("next_stop.logger")
         self.log = log_patcher.start()
         self.addCleanup(log_patcher.stop)
+        next_stop._last_logged.clear()  # each test starts with no log throttling history
+        self.addCleanup(next_stop._last_logged.clear)
 
     def run_feed(self, buses, *vehicles, **feed_kwargs):
         self.get.return_value = feed_response(make_feed(*vehicles, **feed_kwargs))
@@ -120,12 +123,18 @@ class TestDatasetConsistency(unittest.TestCase):
     def test_stops_json_matches_official_stops_txt(self):
         with open(next_stop.GTFS_DIR / "stops.txt", encoding="utf-8-sig") as f:
             official = {r["stop_id"]: r for r in csv.DictReader(f)}
-        ours = {s["id"]: s for s in json.loads(next_stop.STOPS_PATH.read_text())}
+        ours = {s["id"]: s for s in json.loads(FRONTEND_STOPS.read_text())}
         self.assertEqual(set(ours), set(official))
         for stop_id, s in ours.items():
             self.assertAlmostEqual(s["lat"], float(official[stop_id]["stop_lat"]), places=7)
             self.assertAlmostEqual(s["lng"], float(official[stop_id]["stop_lon"]), places=7)
             self.assertTrue(official[stop_id]["stop_name"].endswith(s["name"]), stop_id)
+
+    def test_backend_stops_equal_frontend_stops_json_exactly(self):
+        """The backend reads gtfs/stops.txt; riders must see the same IDs, names and
+        coordinates as the frontend's stops.json (map markers and route cards agree)."""
+        frontend = {s["id"]: s for s in json.loads(FRONTEND_STOPS.read_text())}
+        self.assertEqual(static()["stops"], frontend)
 
     def test_every_official_trip_pattern_resolves(self):
         with open(next_stop.GTFS_DIR / "stop_times.txt", encoding="utf-8-sig") as f:
@@ -275,7 +284,7 @@ class TestUnavailable(NextStopTestBase):
         [bus] = self.run_feed([bus_at(red_stop_id(5))],
                               make_vehicle(seq=5, stop_id="99999999", lat=s["lat"], lng=s["lng"]))
         self.assertUnavailable(bus)
-        self.assertTrue(any("missing from stops.json" in str(c) for c in self.log.info.call_args_list))
+        self.assertTrue(any("missing from gtfs/stops.txt" in str(c) for c in self.log.debug.call_args_list))
 
     def test_no_stop_id(self):
         [bus] = self.run_feed([bus_at(red_stop_id(5))], make_vehicle(seq=5, omit=["stop_id"]))
@@ -520,6 +529,96 @@ class TestEnrichmentLeavesExistingFields(NextStopTestBase):
         self.run_feed([original], make_vehicle(seq=2))
         self.assertEqual({k: original[k] for k in before}, before)
         self.assertEqual(set(original) - set(before), {"nextStop", "currentStop", "direction"})
+
+
+class TestProductionPackaging(unittest.TestCase):
+    """Regression: production returned nextStop=null for every bus because the
+    backend read frontend/public/stops.json, and @vercel/python excludes every
+    "**/public/**" path from the function bundle."""
+
+    def tearDown(self):
+        next_stop.load_static.cache_clear()
+
+    def test_runtime_data_is_not_under_a_public_directory(self):
+        rel = next_stop.GTFS_DIR.relative_to(next_stop.ROOT)
+        self.assertNotIn("public", rel.parts)
+        self.assertFalse(hasattr(next_stop, "STOPS_PATH"))
+
+    def test_static_data_loads_from_a_bundle_without_frontend(self):
+        import shutil
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            gtfs = os.path.join(tmp, "gtfs")
+            os.makedirs(gtfs)
+            for name in ("stops.txt", "routes.txt", "trips.txt", "stop_times.txt"):
+                shutil.copy(next_stop.GTFS_DIR / name, gtfs)
+            self.assertFalse(os.path.exists(os.path.join(tmp, "frontend")))
+            next_stop.load_static.cache_clear()
+            with mock.patch("next_stop.GTFS_DIR", next_stop.Path(gtfs)), mock.patch("next_stop.logger"):
+                data = next_stop.load_static()
+        self.assertEqual(len(data["stops"]), 111)
+        self.assertEqual(len(data["trips"]), 21)
+        self.assertEqual(data["stops"]["70726"]["name"], "Post Office")
+
+
+class TestDiagnosticLogging(NextStopTestBase):
+    def test_static_failure_logs_stage_static_and_keeps_buses(self):
+        test_bus = bus_at("70726")
+        next_stop.load_static.cache_clear()
+        try:
+            with mock.patch("next_stop._read_csv", side_effect=FileNotFoundError(2, "No such file", "gtfs/stops.txt")):
+                [bus] = next_stop.add_next_stops([test_bus], now=NOW)
+        finally:
+            next_stop.load_static.cache_clear()
+        self.assertUnavailable(bus)
+        msg = str(self.log.error.call_args)
+        self.assertIn("[stage=static]", msg)
+        self.assertIn("FileNotFoundError", msg)
+        self.get.assert_not_called()
+
+    def test_feed_failure_logs_stage_feed(self):
+        self.get.side_effect = requests.Timeout("slow")
+        next_stop.add_next_stops([bus_at("70726")], now=NOW)
+        msg = str(self.log.warning.call_args)
+        self.assertIn("[stage=feed]", msg)
+        self.assertIn("Timeout", msg)
+
+    def test_routine_summary_is_debug_only(self):
+        buses = [bus_at(red_stop_id(5)), bus_at(red_stop_id(6), id=1, outdatedGps=True), bus_at(red_stop_id(7), id=2)]
+        self.run_feed(buses, make_vehicle(seq=5))
+        args = self.log.debug.call_args.args
+        self.assertIn("[stage=validate]", args[0])
+        self.assertEqual(args[1:4], (1, 3, 1))
+        self.assertEqual(args[4], {"passio gps outdated": 1, "N feed vehicles": 1})
+        self.log.info.assert_not_called()
+        self.log.warning.assert_not_called()
+        self.log.error.assert_not_called()
+
+    def test_systematic_validation_failure_warns_once_per_window(self):
+        # Eligible buses but none resolved (feed has none of them): the production-bug pattern.
+        for _ in range(5):
+            self.run_feed([bus_at(red_stop_id(5)), bus_at(red_stop_id(6), id=2)], make_vehicle("99999", seq=5))
+        self.assertEqual(self.log.warning.call_count, 1)
+        args = self.log.warning.call_args.args
+        self.assertIn("[stage=validate]: 0 resolved", args[0])
+        self.assertEqual(args[4], {"N feed vehicles": 2})
+
+    def test_only_stale_buses_is_not_a_systematic_failure(self):
+        self.run_feed([bus_at(red_stop_id(5), outdatedGps=True)], make_vehicle(seq=5))
+        self.log.warning.assert_not_called()
+
+    def test_repeated_feed_failures_are_throttled(self):
+        self.get.side_effect = requests.ConnectionError("down")
+        for _ in range(10):
+            [bus] = next_stop.add_next_stops([bus_at("70726")], now=NOW)
+            self.assertUnavailable(bus)
+        self.assertEqual(self.log.warning.call_count, 1)
+
+    def test_throttle_window_reopens(self):
+        clock = iter([0, 10, next_stop.LOG_THROTTLE_SECONDS + 1]).__next__
+        self.assertTrue(next_stop._should_log("x", clock=clock))
+        self.assertFalse(next_stop._should_log("x", clock=clock))
+        self.assertTrue(next_stop._should_log("x", clock=clock))
 
 
 if __name__ == "__main__":

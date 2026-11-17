@@ -8,6 +8,10 @@ from next_stop import add_next_stops
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
+# Make next-stop diagnostics (INFO summaries, stage errors) visible in server logs,
+# e.g. Vercel runtime logs. Server-side only; nothing is added to API responses.
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logging.getLogger("next_stop").setLevel(logging.INFO)
 
 @app.route("/")
 def home():
