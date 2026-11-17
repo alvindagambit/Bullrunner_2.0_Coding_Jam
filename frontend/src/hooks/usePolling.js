@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react'
  * Calls `fetcher` right away and then every `intervalMs`.
  * Returns { data, error, lastUpdated }. Keeps the last good data if a call fails.
  *
- * Reusable: Ana can use the same hook for alerts, e.g.
- *   usePolling(fetchAlerts, 60_000)
+ * Used by useBuses (every BUS_POLL_MS) and useAlerts (every ALERTS_POLL_MS).
  */
 export function usePolling(fetcher, intervalMs) {
   const [data, setData] = useState(null)

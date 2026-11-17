@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Leaflet needs its container to have a real height (see team plan, "Map renders blank"). */
+/* Leaflet needs its container to have a real height, otherwise the map renders blank. */
 html,
 body,
 #root {

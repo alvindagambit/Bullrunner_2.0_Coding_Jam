@@ -1,4 +1,4 @@
-// Fake GET /buses so the map works before the backend is ready.
+// Fake GET /buses for demo mode only (VITE_USE_MOCK=true); never used in production.
 //
 // buses.json, routes.json and stops.json in this folder are a REAL sample
 // recorded from Passio (USF system 2343), already converted to the

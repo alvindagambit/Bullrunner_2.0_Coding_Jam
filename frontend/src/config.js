@@ -9,7 +9,7 @@ export const API_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '
  */
 export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'false') === 'true'
 
-/** USF Tampa, from the team plan. */
+/** Initial map view: USF Tampa campus. */
 export const USF_CENTER = [28.0587, -82.4139]
 export const DEFAULT_ZOOM = 15
 

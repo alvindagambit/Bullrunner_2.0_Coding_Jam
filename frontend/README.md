@@ -44,15 +44,17 @@ stops.json     -> [{ id, name, lat, lng }]
 
 `route` in `/buses` must match `name` in `routes.json` exactly; otherwise route filtering won't line up. `outdatedGps` is used to visually distinguish stale bus locations and show route-level warnings.
 
-Each active route card lists its buses with "Next stop: …", the stop ID, "Route progress: Stop X of Y" and a **View on Map** action. USF routes are loops, so the loop's end stop isn't shown as a destination; "Heading toward …" appears only for a one-way trip (none exist today). **View on Map** centers the map on the stop, highlights it, and shows **Back to full map**; route filtering keeps working. When `nextStop` or `direction` is `null`, the card says "Next stop unavailable" or "Route progress unavailable". Mock buses have no next-stop data, so they always show "unavailable".
+Each active route card lists its buses with "Next stop: …", the stop ID, "Route progress: Stop X of Y" and a **View on Map** action. USF routes are loops, so the loop's end stop isn't shown as a destination; "Heading toward …" appears only for a one-way trip (none exist today). **View on Map** centers the map on the stop, highlights it, and shows **Back to full map**; route filtering keeps working. When `nextStop` is `null`, the card says "Next stop unavailable" (and shows no route progress line). When only `direction` is `null`, it says "Route progress unavailable" under the next stop. Mock buses have no next-stop data, so they always show "Next stop unavailable".
 
 ## Files
 
 ```
 src/
-  App.jsx                   layout; holds selectedRoute state; renders SidePanel + Map
-  components/Map.jsx        the Leaflet map (routes, stops, buses)
-  components/SidePanel.jsx  route list, bus count, average load, alerts banner (Ana)
+  App.jsx                   layout (map above panel on phones, side by side from md); holds
+                            selectedRoute and focusedStop state; "Back to full map" button
+  components/Map.jsx        the Leaflet map (routes, stops, buses, focused-stop highlight)
+  components/SidePanel.jsx  stats, collapsible service alerts (Ana), route cards with each
+                            bus's next stop, route progress and View on Map
   hooks/usePolling.js       generic "call every N ms" hook
   hooks/useBuses.js         buses every 5 s (mock or backend)
   hooks/useAlerts.js        alerts every 60 s
@@ -66,5 +68,7 @@ vercel.json                 production rewrite: /api/* -> deployed Flask backend
 
 ## Map interactions
 
-- Hover a line, stop or bus to see its name (buses also show how full they are).
-- Click a route line to highlight it and hide the other routes' buses. Click it again, or click the empty map, to show everything.
+- Hover a line, stop or bus to see its name (buses also show how full they are, and a warning if their GPS is stale).
+- Click a route line or route card to highlight it and hide the other routes' buses. Click it again, or click the empty map, to show everything.
+- **View on Map** on a bus's next stop centers the map on that stop and highlights it; **Back to full map** returns to the campus view.
+- Service alerts start collapsed; **Show details** expands them.

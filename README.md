@@ -1,6 +1,6 @@
 # Bullrunner 2.0
 
-A live map of USF's Bull Runner campus shuttles. It shows the route lines, the stops, and every bus that is currently running, with how full each bus is. Positions refresh every 5 seconds.
+A live map of USF's Bull Runner campus shuttles. It shows the route lines, the stops, and every bus that is currently running, with how full each bus is and its verified next stop. Positions refresh every 5 seconds; official USF service alerts refresh every 60 seconds.
 
 Started as a USF Coding Jam project at a Google DevFest hackathon. It is now maintained by Alvin Lopez.
 
@@ -16,16 +16,17 @@ Both are deployed on Vercel from `main`. Outside service hours (nights, weekends
 ## Architecture
 
 ```
-Browser ──► React/Vite frontend ──/api/buses──► Flask backend ──► PassioGo API
-            (Leaflet map,          (Vite proxy     (/buses: filter,    (USF system 2343)
-             side panel)            or Vercel       validate GPS,
-                                    rewrite)        compute load)
-            routes.json / stops.json ◄── gtfs/convert_gtfs.py (USF GTFS feed)
+Browser ──► React/Vite frontend ──/api/*──► Flask backend ──► PassioGo API (live buses, USF system 2343)
+            (Leaflet map,          (Vite proxy  (/buses, /alerts) ──► USF GTFS-Realtime: vehiclePositions,
+             route panel)           or Vercel        │                     serviceAlerts
+                                    rewrite)         └── gtfs/*.txt (official static GTFS: stops, trips, stop order)
+            routes.json / stops.json ◄── gtfs/convert_gtfs.py (same official GTFS)
 ```
 
-- **Backend**: Python 3, Flask (`app.py`, `passio_client.py`). It reads live vehicle data from PassioGo, drops out-of-service buses and invalid coordinates, and returns a small JSON contract. See [`BACKEND.md`](BACKEND.md), the source of truth for the API.
-- **Frontend**: React 19, Vite, Tailwind, Leaflet (`frontend/`). See [`frontend/README.md`](frontend/README.md).
-- **Static map data**: route shapes and stops converted from USF's GTFS feed by `gtfs/convert_gtfs.py` into `frontend/public/`.
+- **Backend**: Python 3, Flask (`app.py`). `passio_client.py` reads live buses from PassioGo, drops out-of-service buses and invalid coordinates, and computes load. `next_stop.py` adds each bus's verified next stop and route progress from the official GTFS-Realtime `vehiclePositions` feed, checked against the official stop order in `gtfs/*.txt`. `gtfs_alerts.py` serves official USF service alerts. See [`BACKEND.md`](BACKEND.md), the source of truth for the API.
+- **Frontend**: React 19, Vite, Tailwind, Leaflet (`frontend/`). On phones the map sits above a scrollable route panel; on wider screens the panel is on the left. See [`frontend/README.md`](frontend/README.md).
+- **Static map data**: route shapes and stops converted from USF's GTFS feed by `gtfs/convert_gtfs.py` into `frontend/public/` (used by the browser only).
+- **Backend runtime data**: only `gtfs/*.txt`. Vercel's Python builder never bundles `**/public/**` paths, so backend code must not read from `frontend/public/`.
 - **API routing**: the frontend always calls `/api/*`. Locally, the Vite dev server proxies it to Flask on port 5001. In production, `frontend/vercel.json` rewrites it to the deployed backend. Either way the `/api` prefix is stripped, and no CORS is needed.
 
 ## Local setup
@@ -60,8 +61,8 @@ Use port **5001** for Flask. On macOS, port 5000 is taken by the AirPlay Receive
 
 | Endpoint | Status |
 |---|---|
-| `GET /buses` | Implemented. Returns `[{ id, lat, lng, route, color, load, outdatedGps, ... }]`. `load` is a percentage from 0 to 100, or `null` when unavailable. `outdatedGps` is a boolean. Upstream failures return `502`. |
-| `GET /alerts` | Pending live feed validation. Parses official USF GTFS-Realtime advisories; `200 []` means no current alerts, `502` means feed unavailable. |
+| `GET /buses` | Returns `[{ id, lat, lng, route, color, load, outdatedGps, nextStop, currentStop, direction, ... }]`. `load` is a percentage from 0 to 100, or `null` when unavailable. `outdatedGps` is a boolean. `nextStop` / `direction` are `null` unless verified. Upstream failures return `502`. |
+| `GET /alerts` | Official USF GTFS-Realtime service alerts (verified in production 2026-11-16). `200 []` means no current alerts; `502` means the feed is unavailable, and the app says so rather than claiming there are none. |
 
 Full field reference: [`BACKEND.md`](BACKEND.md).
 
@@ -78,19 +79,21 @@ npm run lint
 # Live smoke test (Flask and Vite running)
 curl -s http://127.0.0.1:5001/buses        # Flask directly
 curl -s http://localhost:5173/api/buses    # through the Vite proxy
+
+# Read-only comparison of production next stops with the official GTFS-Realtime feed
+python scripts/verify_live_transit.py
 ```
 
 ## Known limitations
 
 - **Stale GPS is flagged**: buses with `outdatedGps: true` are shown with muted dashed map markers and warnings in the route panel. Their positions may be outdated.
-- **Alerts require live verification**: GTFS-Realtime integration must be tested against the upstream feed before release; errors must never be treated as no advisories.
 - **Next stop is shown only when verified**: route cards show each bus's next stop and route progress ("Stop X of Y") from USF's official GTFS-Realtime feed, checked against the official stop order. Otherwise they say "Next stop unavailable" / "Route progress unavailable". Arrival times are not shown.
 - **Brown route not independently cross-checked**: Brown next stops pass the same live-feed and official stop-order checks as every route, but Passio GO publishes no Brown arrival times, so they can't be compared with the official tracker. They are shown, with the same safeguards; stale or conflicting data shows "Next stop unavailable".
 - **MSC Express has no route line**: the route exists in PassioGo but not in the GTFS data, so its buses appear without a line, and without a next stop.
 - **No CI**: tests and lint only run locally. Vercel builds each PR, but it doesn't run the tests.
 - **No caching**: every frontend poll (each tab, every 5 s) reaches PassioGo.
 - **PassioGo 0.2.2 bug**: `Vehicle` objects have broken coordinates, so `passio_client.py` reads the raw API instead of using `getVehicles()`.
-- **GTFS regeneration** needs `pandas`, which isn't in `requirements.txt` because the app doesn't use it at runtime. `gtfs/routes.json` and `gtfs/stops.json` are an older output format used only by `gtfs/check_routes.py`. The app uses `frontend/public/`.
+- **GTFS regeneration** needs `pandas`, which isn't in `requirements.txt` because the app doesn't use it at runtime. `gtfs/routes.json` and `gtfs/stops.json` are an older output format used only by `gtfs/check_routes.py`. The frontend uses `frontend/public/`; the backend uses `gtfs/*.txt`. The official feed in `gtfs/` is valid until 2026-12-16; refresh all `gtfs/*.txt` files from USF's `google_transit.zip` when a new feed is published.
 
 ## Contributors
 
