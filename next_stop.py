@@ -247,22 +247,26 @@ def add_next_stops(buses, now=None):
     try:
         static = load_static()
     except Exception as exc:
-        logger.error("Next-stop data unavailable [stage=static]: cannot load gtfs/*.txt (%s: %s)",
-                     type(exc).__name__, getattr(exc, "filename", None) or exc)
+        if _should_log("static"):
+            logger.error("Next-stop data unavailable [stage=static]: cannot load gtfs/*.txt (%s: %s)%s",
+                         type(exc).__name__, getattr(exc, "filename", None) or exc, _THROTTLE_NOTE)
         return buses
     # Stage 2: live vehiclePositions feed.
     try:
         vehicles = fetch_vehicle_positions()
     except FeedError as exc:
         cause = exc.__cause__ or exc
-        logger.warning("Next-stop data unavailable [stage=feed]: vehiclePositions request failed (%s)",
-                       type(cause).__name__)
+        if _should_log("feed"):
+            logger.warning("Next-stop data unavailable [stage=feed]: vehiclePositions request failed (%s)%s",
+                           type(cause).__name__, _THROTTLE_NOTE)
         return buses
     except Exception:
-        logger.exception("Next-stop data unavailable [stage=feed]")
+        if _should_log("feed"):
+            logger.exception("Next-stop data unavailable [stage=feed]")
         return buses
 
-    # Stage 3: per-vehicle validation. One summary line per request; per-bus detail at DEBUG.
+    # Stage 3: per-vehicle validation. Routine results at DEBUG; a throttled WARNING
+    # only when the failure looks systematic (eligible buses exist, none resolved).
     now = int(time.time()) if now is None else now
     reasons = Counter()
     for bus in buses:
@@ -270,7 +274,8 @@ def add_next_stops(buses, now=None):
             next_stop, current_stop, direction, reason = _evaluate(
                 bus, vehicles.get(str(bus.get("id")), []), static, now)
         except Exception:
-            logger.exception("Next-stop evaluation failed for bus %s", bus.get("id"))
+            if _should_log("evaluate"):
+                logger.exception("Next-stop evaluation failed for bus %s", bus.get("id"))
             reasons["evaluation error"] += 1
             continue
         bus["nextStop"], bus["currentStop"], bus["direction"] = next_stop, current_stop, direction
@@ -278,9 +283,31 @@ def add_next_stops(buses, now=None):
             reasons[_reason_category(reason)] += 1
             logger.debug("Bus %s next stop unavailable: %s", bus.get("id"), reason)
     resolved = sum(1 for b in buses if b["nextStop"] or b["currentStop"])
-    logger.info("Next-stop enrichment [stage=validate]: %d/%d buses resolved; feed vehicles=%d; unresolved=%s",
-                resolved, len(buses), len(vehicles), dict(reasons) or "{}")
+    eligible = sum(1 for b in buses if b.get("outdatedGps") is not True)
+    summary = (resolved, len(buses), len(vehicles), dict(reasons) or "{}")
+    if eligible and not resolved and _should_log("validate"):
+        logger.warning("Next-stop enrichment [stage=validate]: 0 resolved; %d/%d buses resolved; "
+                       "feed vehicles=%d; unresolved=%s" + _THROTTLE_NOTE, *summary)
+    else:
+        logger.debug("Next-stop enrichment [stage=validate]: %d/%d buses resolved; "
+                     "feed vehicles=%d; unresolved=%s", *summary)
     return buses
+
+
+# Each distinct failure is logged at most once per window, so clients polling
+# every few seconds cannot flood the logs during an outage.
+LOG_THROTTLE_SECONDS = 300
+_THROTTLE_NOTE = " (repeats suppressed for 5 min)"
+_last_logged = {}
+
+
+def _should_log(key, clock=time.monotonic):
+    now = clock()
+    last = _last_logged.get(key)
+    if last is not None and now - last < LOG_THROTTLE_SECONDS:
+        return False
+    _last_logged[key] = now
+    return True
 
 
 def _reason_category(reason):

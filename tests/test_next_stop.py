@@ -104,6 +104,8 @@ class NextStopTestBase(unittest.TestCase):
         log_patcher = mock.patch("next_stop.logger")
         self.log = log_patcher.start()
         self.addCleanup(log_patcher.stop)
+        next_stop._last_logged.clear()  # each test starts with no log throttling history
+        self.addCleanup(next_stop._last_logged.clear)
 
     def run_feed(self, buses, *vehicles, **feed_kwargs):
         self.get.return_value = feed_response(make_feed(*vehicles, **feed_kwargs))
@@ -581,13 +583,42 @@ class TestDiagnosticLogging(NextStopTestBase):
         self.assertIn("[stage=feed]", msg)
         self.assertIn("Timeout", msg)
 
-    def test_validation_summary_counts_reasons(self):
+    def test_routine_summary_is_debug_only(self):
         buses = [bus_at(red_stop_id(5)), bus_at(red_stop_id(6), id=1, outdatedGps=True), bus_at(red_stop_id(7), id=2)]
         self.run_feed(buses, make_vehicle(seq=5))
-        args = self.log.info.call_args.args
+        args = self.log.debug.call_args.args
         self.assertIn("[stage=validate]", args[0])
         self.assertEqual(args[1:4], (1, 3, 1))
         self.assertEqual(args[4], {"passio gps outdated": 1, "N feed vehicles": 1})
+        self.log.info.assert_not_called()
+        self.log.warning.assert_not_called()
+        self.log.error.assert_not_called()
+
+    def test_systematic_validation_failure_warns_once_per_window(self):
+        # Eligible buses but none resolved (feed has none of them): the production-bug pattern.
+        for _ in range(5):
+            self.run_feed([bus_at(red_stop_id(5)), bus_at(red_stop_id(6), id=2)], make_vehicle("99999", seq=5))
+        self.assertEqual(self.log.warning.call_count, 1)
+        args = self.log.warning.call_args.args
+        self.assertIn("[stage=validate]: 0 resolved", args[0])
+        self.assertEqual(args[4], {"N feed vehicles": 2})
+
+    def test_only_stale_buses_is_not_a_systematic_failure(self):
+        self.run_feed([bus_at(red_stop_id(5), outdatedGps=True)], make_vehicle(seq=5))
+        self.log.warning.assert_not_called()
+
+    def test_repeated_feed_failures_are_throttled(self):
+        self.get.side_effect = requests.ConnectionError("down")
+        for _ in range(10):
+            [bus] = next_stop.add_next_stops([bus_at("70726")], now=NOW)
+            self.assertUnavailable(bus)
+        self.assertEqual(self.log.warning.call_count, 1)
+
+    def test_throttle_window_reopens(self):
+        clock = iter([0, 10, next_stop.LOG_THROTTLE_SECONDS + 1]).__next__
+        self.assertTrue(next_stop._should_log("x", clock=clock))
+        self.assertFalse(next_stop._should_log("x", clock=clock))
+        self.assertTrue(next_stop._should_log("x", clock=clock))
 
 
 if __name__ == "__main__":
